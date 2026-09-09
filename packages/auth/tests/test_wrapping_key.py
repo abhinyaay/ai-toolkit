@@ -98,6 +98,20 @@ def test_replace_file_atomically_does_not_leave_a_shared_tmp_name(tmp_path: Path
     assert not (tmp_path / "session.enc.tmp").exists()
 
 
+def test_replace_file_atomically_preserves_data_after_a_short_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    path = tmp_path / "session.enc"
+    write = os.write
+
+    def short_write(fd, data):
+        return write(fd, data[:3])
+
+    monkeypatch.setattr(os, "write", short_write)
+    replace_file_atomically(path, b"complete encrypted session")
+    assert path.read_bytes() == b"complete encrypted session"
+
+
 @pytest.mark.skipif(sys.platform != "darwin", reason="Security.framework CDLL")
 def test_darwin_load_or_create_raises_when_copy_returns_none_after_add(
     monkeypatch: pytest.MonkeyPatch,

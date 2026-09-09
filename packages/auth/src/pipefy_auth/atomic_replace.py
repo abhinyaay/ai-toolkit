@@ -22,7 +22,12 @@ def replace_file_atomically(path: Path, data: bytes) -> None:
     tmp_path = Path(tmp_name)
     try:
         try:
-            os.write(fd, data)
+            remaining = memoryview(data)
+            while remaining:
+                written = os.write(fd, remaining)
+                if written == 0:
+                    raise OSError("atomic file write made no progress")
+                remaining = remaining[written:]
         finally:
             os.close(fd)
         if os.name != "nt":
