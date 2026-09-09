@@ -110,6 +110,7 @@ _PORTAL_DETAIL_GRAPHQL = {
         {
             "id": "page-1",
             "title": "Home",
+            "layout": [{"id": "row-1", "type": "row", "children": ["el-1"]}],
             "elements": [
                 {
                     "id": "el-1",
@@ -130,6 +131,7 @@ _PORTAL_DETAIL = {
             "id": "page-1",
             "uuid": "page-1",
             "title": "Home",
+            "layout": [{"id": "row-1", "type": "row", "children": ["el-1"]}],
             "elements": [
                 {
                     "id": "el-1",
@@ -839,7 +841,7 @@ async def test_sort_portal_pages_calls_sort_pages_with_page_ids_list() -> None:
 @pytest.mark.asyncio
 async def test_update_portal_page_layout_does_not_send_interface_uuid() -> None:
     """update_portal_page_layout uses updatePageLayout with page_id and layout only."""
-    layout = {"rows": [{"columns": [{"width": 12}]}]}
+    layout = [{"id": "row-1", "type": "row", "children": ["el-1"]}]
     service, _public, interfaces_executor = _make_interfaces_service(
         {"updatePageLayout": {"success": True}},
     )
@@ -1406,3 +1408,15 @@ async def test_sub_portal_internal_api_non_permission_error_propagates() -> None
             _FORMS_ELEMENT_ID,
             _SUB_PORTAL_UUID,
         )
+
+
+def test_get_portal_selects_page_layout():
+    from pipefy_sdk.queries.portal_queries import GET_PORTAL_QUERY
+
+    portal = GET_PORTAL_QUERY.document.definitions[0].selection_set.selections[0]
+    pages = next(
+        field
+        for field in portal.selection_set.selections
+        if field.name.value == "pages"
+    )
+    assert "layout" in {field.name.value for field in pages.selection_set.selections}

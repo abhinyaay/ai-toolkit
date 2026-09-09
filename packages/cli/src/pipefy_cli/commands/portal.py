@@ -496,9 +496,13 @@ def portal_page_layout_update(
     """Update a portal page grid layout."""
 
     page_id = _require_non_empty_portal_uuid(page_id)
-    layout_obj = parse_json_object(layout, "--layout")
-    if layout_obj is None:
-        raise typer.BadParameter("--layout must be a JSON object.")
+    layout_obj = parse_json_value(layout, "--layout")
+    if not isinstance(layout_obj, list) or not all(
+        isinstance(row, dict) for row in layout_obj
+    ):
+        raise typer.BadParameter(
+            "--layout must be a JSON array of row objects from get_portal pages[].layout."
+        )
 
     async def factory(client: PipefyClient):
         return await client.update_portal_page_layout(page_id, layout_obj)

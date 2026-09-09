@@ -489,13 +489,13 @@ class PortalService:
         )
 
     async def update_portal_page_layout(
-        self, page_id: str, layout: dict[str, Any]
+        self, page_id: str, layout: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Update a portal page grid layout (full layout blob).
 
         Args:
             page_id: Page UUID (no parent ``interface_uuid`` on this mutation).
-            layout: Layout JSON as required by ``updatePageLayout``.
+            layout: Full row array from ``get_portal`` -> ``pages[].layout``.
         """
         return await _execute_query_with_portal_errors(
             self.execute_interfaces_query,

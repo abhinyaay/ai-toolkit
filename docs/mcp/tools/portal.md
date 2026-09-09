@@ -123,6 +123,8 @@ Fifteen values accepted by `create_portal_element` / `update_portal_element` (SD
 | `delete_sub_portal_element` | No | Detach wiring (`deleteSubPortalElement`). |
 | `delete_sub_portal` | No | Delete interface (`deleteSubPortalInterface`). |
 
+**Read before editing layout:** `get_portal` returns the full `pages[].layout` row array. Each row carries `id`, `type: "row"`, and `children` element UUIDs; array order defines placement. Pass the complete array to `update_portal_page_layout` (CLI `--layout '[...]'`), preserving unaffected rows, IDs, and children. Do not wrap it in `{ "rows": [...] }`. Element `metadata.gridMap` holds dimensions (`height`, `columns`, `minColumns`), not row order or grouping; retain it when replacing element metadata. Re-read the page and compare layout and element metadata after writing. If the layout cannot be read, stop the positional edit instead of reconstructing it from dimensions.
+
 **Layout caveat:** `createElement` does not update the page grid; `duplicateElement` appends layout rows; `deleteElement` does not prune layout unless you pass updated `layout`. Orphan layout references can break the portal viewer (HTTP 500). Prefer disposable pages in smoke tests.
 
 ---
@@ -199,7 +201,7 @@ Nested GraphQL/internal_api `success: false` → MCP top-level `{ success: false
 | `update_portal_page` | `pipefy portal page update <portal-uuid> <page-uuid> [--title …]` |
 | `delete_portal_page` | `pipefy portal page delete <portal-uuid> <page-uuid> --yes` |
 | `sort_portal_pages` | `pipefy portal page sort --portal-uuid <uuid> --page-ids id1,id2` |
-| `update_portal_page_layout` | `pipefy portal page layout update --page-id <uuid> --layout '{…}'` |
+| `update_portal_page_layout` | `pipefy portal page layout update --page-id <uuid> --layout '[…]'` |
 | `create_portal_element` | `pipefy portal element create --page-id <uuid> --type forms --metadata '{…}'` |
 | `update_portal_element` | `pipefy portal element update <element-uuid> <page-uuid> --type link --metadata '{…}'` |
 | `delete_portal_element` | `pipefy portal element delete <element-uuid> <page-uuid> --yes` |

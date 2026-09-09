@@ -1964,13 +1964,13 @@ class PipefyClient:
         return await self._portal_service.sort_portal_pages(interface_uuid, page_ids)
 
     async def update_portal_page_layout(
-        self, page_id: str, layout: dict[str, Any]
+        self, page_id: str, layout: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Update a portal page grid layout.
 
         Args:
             page_id: Page UUID.
-            layout: Layout JSON for ``updatePageLayout``.
+            layout: Full row array from ``get_portal`` -> ``pages[].layout``.
         """
         return await self._portal_service.update_portal_page_layout(page_id, layout)
 

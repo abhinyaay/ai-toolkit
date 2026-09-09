@@ -507,7 +507,7 @@ class PortalTools:
         async def update_portal_page_layout(
             ctx: Context,
             page_id: str,
-            layout: dict[str, Any],
+            layout: list[dict[str, Any]],
         ) -> dict[str, Any]:
             """Update a portal page grid layout.
 
@@ -516,7 +516,10 @@ class PortalTools:
 
             Args:
                 page_id: Page UUID.
-                layout: Layout JSON (full layout object for the page).
+                layout: Full array from get_portal -> pages[].layout. Preserve
+                    row IDs and children (element UUIDs), changing only intended
+                    positions. Do not wrap it in an object or infer positions from
+                    metadata.gridMap (element dimensions). Re-read to verify.
             """
             client = get_pipefy_client(ctx)
             page_id, err = validate_tool_id(page_id, "page_id")

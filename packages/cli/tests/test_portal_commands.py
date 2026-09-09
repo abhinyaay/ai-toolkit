@@ -249,7 +249,7 @@ _CREATED_PAGE = {
     "elements": [{"id": "el-1", "uuid": "el-1", "type": "text"}],
 }
 
-_PAGE_LAYOUT = {"rows": [{"columns": [{"width": 12}]}]}
+_PAGE_LAYOUT = [{"id": "row-1", "type": "row", "children": ["el-1"]}]
 
 
 def test_portal_page_create_json(runner, clean_pipefy_env, saved_cwd, oauth_env):
@@ -1627,3 +1627,26 @@ def test_portal_sub_portal_detach_permission_error_still_exits_2(
         )
     assert result.exit_code == 2, result.stdout + (result.stderr or "")
     assert "manage_portals" in result.stderr
+
+
+@pytest.mark.parametrize("layout", [{"rows": []}, ["element-1"], None])
+def test_page_layout_rejects_non_row_arrays(
+    runner, clean_pipefy_env, saved_cwd, oauth_env, layout
+):
+    oauth_env("portal-layout-invalid")
+    result = runner.invoke(
+        app,
+        [
+            "portal",
+            "page",
+            "layout",
+            "update",
+            "--page-id",
+            _PAGE_UUID,
+            "--layout",
+            json.dumps(layout),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "JSON array of row objects" in result.stderr
