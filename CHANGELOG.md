@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **MCP errors**: the shared error envelope now supplies `Tool request failed.` for blank or whitespace-only messages while preserving non-blank domain guidance, error codes, and details (#593).
+
 - **Cursor Marketplace plugin**: hosted MCP config is `.mcp.json` only. `.cursor-plugin/plugin.json` points `mcpServers` at `./.mcp.json`, the same file Claude Code auto-discovers.
 - **Cursor plugin listing title**: adding this repo as a GitHub marketplace title-cased the slug `ai-toolkit` to "Ai Toolkit". `.cursor-plugin/marketplace.json` names the marketplace `pipefy`, and the plugin `displayName` is `Pipefy`, matching other company plugins.
 
