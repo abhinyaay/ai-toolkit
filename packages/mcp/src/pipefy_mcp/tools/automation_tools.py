@@ -131,9 +131,10 @@ class AutomationTools:
         ) -> dict[str, Any]:
             """List traditional automation rules, optionally filtered by organization and/or pipe.
 
-            Use this to discover automation IDs in a pipe or org before calling ``get_automation``
-            for full payloads, or to plan ``create_automation`` / ``update_automation`` without
-            listing unrelated rules.
+            Each row includes ``event_id``, ``event_params``, and ``condition`` for
+            auditing triggers and filters without a detail call per rule. An empty
+            condition expression is the API placeholder, not an active filter.
+            Use ``get_automation`` for full action payloads before changing a rule.
 
             Combine with ``get_automation`` for full detail. When only ``pipe_id`` is set (no
             ``organization_id``), the server resolves the org from the pipe first, then lists

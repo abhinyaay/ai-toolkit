@@ -158,6 +158,30 @@ GET_AUTOMATIONS_BY_ORG_QUERY = gql(
                 name
                 active
                 action_id
+                event_id
+                event_params {
+                    fromPhaseId
+                    inPhaseId
+                    kindOfSla
+                    to_phase_id
+                    triggerAutomationId
+                    triggerFieldIds
+                    phase {
+                        id
+                        name
+                    }
+                }
+                condition {
+                    id
+                    expressions {
+                        id
+                        structure_id
+                        field_address
+                        operation
+                        value
+                    }
+                    expressions_structure
+                }
             }
         }
     }
@@ -173,6 +197,30 @@ GET_AUTOMATIONS_FOR_ORG_AND_REPO_QUERY = gql(
                 name
                 active
                 action_id
+                event_id
+                event_params {
+                    fromPhaseId
+                    inPhaseId
+                    kindOfSla
+                    to_phase_id
+                    triggerAutomationId
+                    triggerFieldIds
+                    phase {
+                        id
+                        name
+                    }
+                }
+                condition {
+                    id
+                    expressions {
+                        id
+                        structure_id
+                        field_address
+                        operation
+                        value
+                    }
+                    expressions_structure
+                }
             }
         }
     }

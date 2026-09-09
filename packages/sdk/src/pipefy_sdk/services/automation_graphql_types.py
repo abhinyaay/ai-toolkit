@@ -167,6 +167,9 @@ class AutomationRuleSummary(TypedDict, total=False):
     name: str
     active: bool
     action_id: str
+    event_id: str
+    event_params: AutomationEventParamsRecord | None
+    condition: AutomationConditionRecord | None
 
 
 class AutomationActionRow(TypedDict, total=False):

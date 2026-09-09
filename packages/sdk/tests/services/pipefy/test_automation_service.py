@@ -790,3 +790,45 @@ async def test_get_automation_logs_by_repo_skips_graphql_when_pipe_has_no_automa
     assert out["automationLogsByRepo"]["nodes"] == []
     assert out["automationLogsByRepo"]["totalCount"] == 0
     assert out["automationLogsByRepo"]["pageInfo"]["hasNextPage"] is False
+
+
+@pytest.mark.parametrize(
+    "query", [GET_AUTOMATIONS_BY_ORG_QUERY, GET_AUTOMATIONS_FOR_ORG_AND_REPO_QUERY]
+)
+def test_automation_listing_selects_trigger_and_condition(query):
+    """An audit must distinguish a missing condition from an omitted selection."""
+    operation = query.document.definitions[0]
+    connection = operation.selection_set.selections[0]
+    nodes = connection.selection_set.selections[0]
+    fields = {field.name.value: field for field in nodes.selection_set.selections}
+    assert {
+        "id",
+        "name",
+        "active",
+        "action_id",
+        "event_id",
+        "event_params",
+        "condition",
+    } <= fields.keys()
+    event_fields = {
+        field.name.value for field in fields["event_params"].selection_set.selections
+    }
+    assert {
+        "triggerFieldIds",
+        "fromPhaseId",
+        "inPhaseId",
+        "to_phase_id",
+        "kindOfSla",
+        "triggerAutomationId",
+        "phase",
+    } <= event_fields
+    condition_fields = {
+        field.name.value: field
+        for field in fields["condition"].selection_set.selections
+    }
+    assert {"id", "expressions", "expressions_structure"} <= condition_fields.keys()
+    expressions = {
+        field.name.value
+        for field in condition_fields["expressions"].selection_set.selections
+    }
+    assert {"id", "structure_id", "field_address", "operation", "value"} <= expressions
