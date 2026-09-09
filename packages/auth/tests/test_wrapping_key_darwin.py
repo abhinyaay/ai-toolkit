@@ -25,7 +25,24 @@ def _bind(library, name, arguments, result):
     return function
 
 
-def test_allow_all_access_trusts_all_readers_but_preserves_acl_owner(darwin):
+def _application_data(darwin, application):
+    copy_data = _bind(
+        darwin._sec,
+        "SecTrustedApplicationCopyData",
+        [c_void_p, ctypes.POINTER(c_void_p)],
+        ctypes.c_int32,
+    )
+    data = c_void_p()
+    assert copy_data(application, byref(data)) == 0
+    try:
+        return ctypes.string_at(
+            darwin.CFDataGetBytePtr(data), darwin.CFDataGetLength(data)
+        )
+    finally:
+        darwin.CFRelease(data)
+
+
+def test_creator_access_restricts_readers_and_preserves_acl_owner(darwin):
     pointer = ctypes.POINTER(c_void_p)
     copy_matching = _bind(
         darwin._sec, "SecAccessCopyMatchingACLList", [c_void_p, c_void_p], c_void_p
@@ -39,7 +56,19 @@ def test_allow_all_access_trusts_all_readers_but_preserves_acl_owner(darwin):
     count = _bind(darwin._found, "CFArrayGetCount", [c_void_p], c_long)
     get = _bind(darwin._found, "CFArrayGetValueAtIndex", [c_void_p, c_long], c_void_p)
     release = _bind(darwin._found, "CFRelease", [c_void_p], None)
-    access = darwin._allow_all_access()
+    create_application = _bind(
+        darwin._sec,
+        "SecTrustedApplicationCreateFromPath",
+        [ctypes.c_char_p, pointer],
+        ctypes.c_int32,
+    )
+    creator = c_void_p()
+    assert create_application(None, byref(creator)) == 0
+    try:
+        creator_data = _application_data(darwin, creator)
+    finally:
+        release(creator)
+    access = darwin._creator_access()
     try:
         for authorization in (
             "kSecACLAuthorizationDecrypt",
@@ -61,10 +90,13 @@ def test_allow_all_access_trusts_all_readers_but_preserves_acl_owner(darwin):
                     )
                     try:
                         if authorization == "kSecACLAuthorizationDecrypt":
-                            assert apps.value is None, (
-                                "decrypt must trust every application"
+                            assert apps.value is not None, (
+                                "decrypt must not trust every application"
                             )
-                            assert prompt.value == 0
+                            assert count(apps) == 1
+                            assert (
+                                _application_data(darwin, get(apps, 0)) == creator_data
+                            )
                         else:
                             assert apps.value is not None
                             assert count(apps) == 0, (

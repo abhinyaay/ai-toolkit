@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **Auth / CLI / MCP**: `PIPEFY_KEYCHAIN_BACKEND=encrypted` (TOML: `keychain_backend = "encrypted"`) stores the rotating session as AES-256-GCM ciphertext in `session.enc` under the Pipefy config directory. macOS keeps a create-once wrapping key in the login Keychain with an allow-all ACL (`pipefy-wrapping-key` / `aes-256-gcm`); Windows wraps that key with DPAPI (`wrapping.key`). Token refresh rewrites only the file, so unsigned `python3.xx` processes stop re-prompting for the login-keychain password, and Windows sessions that exceed Credential Manager's blob cap no longer fail `CredWrite` with WinError 1783. Linux rejects `encrypted` at the settings boundary (CLI/MCP exit 2, one validation error) rather than raising from `configure_keychain_backend`. Opt-in; `auto` and plaintext `file` are unchanged.
+- **Auth / CLI / MCP**: `PIPEFY_KEYCHAIN_BACKEND=encrypted` (TOML: `keychain_backend = "encrypted"`) stores the rotating session as AES-256-GCM ciphertext in `session.enc` under the Pipefy config directory. macOS keeps a create-once wrapping key in the login Keychain with its default ACL (`pipefy-wrapping-key` / `aes-256-gcm`); Windows wraps that key with DPAPI (`wrapping.key`). Token refresh rewrites only the file, preserving Keychain permissions. A locked macOS keychain or a new or changed Python runtime can still require authorization. Windows sessions that exceed Credential Manager's blob cap no longer fail `CredWrite` with WinError 1783. Linux rejects `encrypted` at the settings boundary (CLI/MCP exit 2, one validation error) rather than raising from `configure_keychain_backend`. Opt-in; `auto` and plaintext `file` are unchanged.
 
 ### Fixed
 

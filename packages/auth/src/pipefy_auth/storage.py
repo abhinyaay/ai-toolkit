@@ -57,8 +57,9 @@ def configure_keychain_backend(choice: KeychainBackendChoice) -> None:
             Linux or CI runners where the OS keychain is unavailable.
             ``"encrypted"`` (macOS and Windows) writes AES-GCM ciphertext to
             ``config_dir() / "session.enc"`` and keeps a create-once wrapping
-            key in the OS (Keychain allow-all ACL on Darwin, DPAPI on
-            Windows) so token refresh does not re-prompt unsigned Pythons.
+            key in the OS (default Keychain ACL on Darwin, DPAPI on Windows).
+            Refresh preserves Keychain permissions; a locked keychain or a
+            new or changed Python runtime can still require authorization.
     """
     global _PRIOR_SESSION_KEYRING
     if choice == "auto":

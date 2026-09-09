@@ -35,8 +35,9 @@ _LINUX_HINT = (
 _MACOS_HINT = (
     "macOS Keychain rejected the write (often errSecInvalidOwnerEdit, -25244: "
     "invalid attempt to change the owner of this item). Prefer "
-    "`PIPEFY_KEYCHAIN_BACKEND=encrypted` so refresh does not re-prompt unsigned "
-    "Python interpreters. Or clear the entry with `pipefy auth logout`; if that "
+    "`PIPEFY_KEYCHAIN_BACKEND=encrypted` so refresh preserves Keychain "
+    "permissions. A locked keychain or a new or changed Python runtime can "
+    "still require authorization. Or clear the entry with `pipefy auth logout`; if that "
     "fails, remove it directly with `security delete-generic-password -s pipefy`. "
     "Then run `pipefy auth login` again from Terminal.app and click Always Allow "
     f"if prompted. {_DARWIN_WINDOWS_ESCAPE}"
@@ -69,6 +70,8 @@ def keychain_store_failure_hint(*, backend: str) -> str:
             f"the create-once wrapping key is readable (macOS Keychain service "
             f"{WRAPPING_KEYCHAIN_SERVICE!r} account {WRAPPING_KEYCHAIN_ACCOUNT!r}; "
             f"Windows {WRAPPING_KEY_FILENAME} under the config directory). "
+            "On macOS, unlock the keychain and authorize this Python runtime "
+            "if prompted. "
             f"Or use a static PIPEFY_TOKEN. See {DOCS_CLI_AUTH_REF}."
         )
     if backend in _FILE_BACKED_TOKENS:

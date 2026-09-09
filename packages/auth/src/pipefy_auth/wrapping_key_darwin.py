@@ -1,8 +1,8 @@
-"""Create-once wrapping key in the macOS Keychain, allow-all ACL.
+"""Create-once wrapping key with the macOS Keychain's per-executable ACL.
 
-NULL trusted-application list on ``SecAccessCreate`` means any process of this
-user can read the item without an ACL prompt. The session blob never lives
-here — only a 32-byte AES key that is not rewritten on refresh.
+``SecAccessCreate`` with a NULL application list trusts the creating executable.
+New or changed Python runtimes may require authorization. Refresh writes only
+the session file, leaving this key and its access permissions unchanged.
 """
 
 from __future__ import annotations
@@ -170,7 +170,7 @@ def _copy_wrapping_key() -> bytes | None:
         CFRelease(query)
 
 
-def _allow_all_access() -> c_void_p:
+def _creator_access() -> c_void_p:
     access = c_void_p()
     description = _cf("pipefy wrapping key")
     try:
@@ -183,7 +183,7 @@ def _allow_all_access() -> c_void_p:
 
 def _add_wrapping_key(key: bytes) -> None:
     with ExitStack() as references:
-        access = _allow_all_access()
+        access = _creator_access()
         references.callback(CFRelease, access)
         query = _query(
             kSecClass=_k("kSecClassGenericPassword"),

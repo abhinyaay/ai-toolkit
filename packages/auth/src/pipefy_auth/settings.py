@@ -322,8 +322,9 @@ class AuthSettings(BaseSettings):
             "in plaintext on disk; opt-in only, intended for headless Linux "
             "without Secret Service or for CI runners. ``encrypted`` (macOS and "
             "Windows) writes AES-GCM ciphertext to ``config_dir()/session.enc`` "
-            "and keeps a create-once wrapping key in the OS so unsigned Python "
-            "interpreters do not re-prompt on every process."
+            "and keeps a create-once wrapping key in the OS. Refresh preserves "
+            "macOS Keychain permissions; a locked keychain or a new or changed "
+            "Python runtime can still require authorization."
         ),
     )
 

@@ -1,8 +1,8 @@
 """OS-protected wrapping keys for the encrypted session file.
 
 The AES-256-GCM data-encryption key is created once. Token refresh rewrites
-only the ciphertext file, never this key — that is what stops macOS Keychain
-ACL prompts on every ``python3.xx`` process.
+only the ciphertext file, preserving macOS Keychain permissions. A locked
+keychain or a new or changed Python runtime can still require authorization.
 """
 
 from __future__ import annotations
