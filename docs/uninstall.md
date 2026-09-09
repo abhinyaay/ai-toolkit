@@ -92,7 +92,7 @@ The order is load-bearing, not cosmetic:
 5. **Client configs.** Before the tools, so no registration is left pointing at a binary that no longer exists.
 6. **Tools.**
 7. **Skills.**
-8. **Runtime state**, last: `pipefy auth logout` and `pipefy auth status` both recreate `~/.config/pipefy` with a lock file, so clearing it any earlier clears nothing.
+8. **Runtime state**, last: `pipefy auth logout` and `pipefy auth status` can recreate `~/.config/pipefy` with `refresh.lock`, and encrypted-session writes also create `session.enc.lock`. Cleanup includes locks created during logout, so clearing them any earlier clears nothing.
 
 `~/.config/pipefy` is removed only if it ends up empty. Its presence after a later `pipefy` invocation is not a failed removal.
 

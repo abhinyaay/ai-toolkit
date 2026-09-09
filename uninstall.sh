@@ -2043,13 +2043,19 @@ scan_config_dir() {
     if [ "$_toml" != "$CONFIG_DIR/config.toml" ]; then
         note "PIPEFY_CONFIG_FILE relocates config.toml to $_toml"
     fi
+    # Logout can create either runtime lock after this scan, even when the
+    # config directory already exists. Existing locks are planned below.
+    if plan_has_kind logout; then
+        for _lock_name in refresh.lock session.enc.lock; do
+            [ -e "$CONFIG_DIR/$_lock_name" ] && continue
+            plan_add 8 ours rmpath "$CONFIG_DIR/$_lock_name" - - - - - - \
+                "delete $CONFIG_DIR/$_lock_name, which the logout above may create"
+        done
+    fi
     if [ ! -d "$CONFIG_DIR" ]; then
         note "does not exist"
-        # `pipefy auth logout` recreates it with a refresh.lock, so the cleanup
-        # is planned now even though there is nothing here yet.
+        # The logout above can recreate the directory with runtime locks.
         if plan_has_kind logout; then
-            plan_add 8 ours rmpath "$CONFIG_DIR/refresh.lock" - - - - - - \
-                "delete $CONFIG_DIR/refresh.lock, which the logout above recreates"
             plan_add 8 ours rmdir "$CONFIG_DIR" - - - - - - \
                 "remove $CONFIG_DIR if it ends up empty"
         fi
@@ -2068,7 +2074,7 @@ scan_config_dir() {
                 note "$CONFIG_DIR/$_name (reported under stored credentials)" ;;
             *.bak.*)
                 note "$CONFIG_DIR/$_name (a backup; kept on purpose)" ;;
-            refresh.lock)
+            refresh.lock|session.enc.lock)
                 finding "$CONFIG_DIR/$_name"
                 plan_add 8 ours rmpath "$CONFIG_DIR/$_name" - - - - - - \
                     "delete $CONFIG_DIR/$_name" ;;

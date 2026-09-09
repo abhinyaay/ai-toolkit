@@ -393,21 +393,51 @@ def test_the_command_sequence_is_credentials_configs_tools_skills_state(tmp_path
     assert skill < lock
 
 
-def test_logout_recreates_the_config_directory_and_the_ordering_still_clears_it(
-    tmp_path,
+@pytest.mark.parametrize("config_exists", [False, True])
+@pytest.mark.parametrize("encrypted", [False, True])
+def test_logout_runtime_locks_are_cleared_even_when_absent_during_scan(
+    tmp_path, config_exists, encrypted
 ):
-    """`pipefy auth logout` recreates ~/.config/pipefy with a refresh.lock."""
+    """Logout can create both runtime locks after the cleanup plan is collected."""
     home = _home(tmp_path)
     stub = _stub_path(tmp_path)
+    _no_uv_tools(stub)
+    if encrypted:
+        _write_exec(
+            stub / "pipefy",
+            _PIPEFY.replace(
+                "exit 0\n", ': > "$HOME/.config/pipefy/session.enc.lock"\nexit 0\n'
+            ),
+        )
     _keychain_entry(stub)
     config = home / ".config" / "pipefy"
-    assert not config.exists()
+    if config_exists:
+        config.mkdir(parents=True)
 
     run = _run(home, stub)
 
     assert "pipefy auth logout" in run.stubs
     assert run.index("pipefy auth logout") < run.index("refresh.lock")
+    if encrypted:
+        assert run.index("pipefy auth logout") < run.index("session.enc.lock")
     # The directory the logout brought back is gone again at the end.
+    assert not config.exists(), sorted(p.name for p in config.iterdir())
+
+
+def test_encrypted_session_teardown_removes_the_backend_runtime_lock(tmp_path):
+    from pipefy_auth.encrypted_file_keyring import EncryptedFileKeyring
+    from pipefy_auth.wrapping_key import InMemoryWrappingKey
+
+    home = _home(tmp_path)
+    config = home / ".config" / "pipefy"
+    backend = EncryptedFileKeyring(config / "session.enc", InMemoryWrappingKey())
+    backend.set_password("pipefy", "example.invalid|test", "fixture secret")
+    stub = _stub_path(tmp_path)
+    _no_uv_tools(stub)
+
+    run = _run(home, stub)
+
+    assert "pipefy auth logout" in run.stubs
     assert not config.exists(), sorted(p.name for p in config.iterdir())
 
 
