@@ -89,6 +89,7 @@ def test_configure_encrypted_installs_file_keyring(
     _isolated_keyring, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setenv("APPDATA", str(tmp_path))
     monkeypatch.setattr(
         "pipefy_auth.encrypted_file_keyring.wrapping_key_store_for_platform",
         lambda config_dir: InMemoryWrappingKey(),
@@ -105,6 +106,7 @@ def test_install_encrypted_is_idempotent(
     _isolated_keyring, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setenv("APPDATA", str(tmp_path))
     wrap = InMemoryWrappingKey()
     monkeypatch.setattr(
         "pipefy_auth.encrypted_file_keyring.wrapping_key_store_for_platform",
