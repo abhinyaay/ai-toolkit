@@ -10,6 +10,7 @@ from __future__ import annotations
 import ctypes
 import functools
 import os
+from contextlib import ExitStack
 from ctypes import byref, c_int32, c_uint32, c_void_p
 from ctypes.util import find_library
 
@@ -43,7 +44,7 @@ CFDictionaryCreate.argtypes = (
     c_void_p,
     c_void_p,
     c_void_p,
-    c_int32,
+    ctypes.c_long,
     c_void_p,
     c_void_p,
 )
@@ -77,8 +78,16 @@ CFDataGetBytePtr.restype = c_void_p
 CFDataGetBytePtr.argtypes = (c_void_p,)
 
 CFDataGetLength = _found.CFDataGetLength
-CFDataGetLength.restype = c_int32
+CFDataGetLength.restype = ctypes.c_long
 CFDataGetLength.argtypes = (c_void_p,)
+
+CFRetain = _found.CFRetain
+CFRetain.restype = c_void_p
+CFRetain.argtypes = (c_void_p,)
+
+CFRelease = _found.CFRelease
+CFRelease.restype = None
+CFRelease.argtypes = (c_void_p,)
 
 
 def _k(symbol: str) -> c_void_p:
@@ -87,14 +96,20 @@ def _k(symbol: str) -> c_void_p:
 
 @functools.singledispatch
 def _cf(value: object) -> object:
-    return value
+    """Return an owned CF reference, including when retaining an existing one."""
+    return CFRetain(value)
 
 
-@_cf.register(bool)
 @_cf.register(int)
-def _(val: bool | int) -> c_void_p:
+def _(val: int) -> c_void_p:
     k_int32 = 0x9
     return CFNumberCreate(None, k_int32, ctypes.byref(c_int32(int(val))))
+
+
+@_cf.register
+def _(val: bool) -> c_void_p:
+    symbol = "kCFBooleanTrue" if val else "kCFBooleanFalse"
+    return CFRetain(c_void_p.in_dll(_found, symbol))
 
 
 @_cf.register
@@ -109,16 +124,20 @@ def _(raw: bytes) -> c_void_p:
 
 
 def _query(**kwargs: object) -> c_void_p:
-    keys = (c_void_p * len(kwargs))(*map(_k, kwargs.keys()))
-    values = (c_void_p * len(kwargs))(*map(_cf, kwargs.values()))
-    return CFDictionaryCreate(
-        None,
-        keys,
-        values,
-        len(kwargs),
-        _found.kCFTypeDictionaryKeyCallBacks,
-        _found.kCFTypeDictionaryValueCallBacks,
-    )
+    with ExitStack() as references:
+        values = []
+        for value in kwargs.values():
+            converted = _cf(value)
+            references.callback(CFRelease, converted)
+            values.append(converted)
+        return CFDictionaryCreate(
+            None,
+            (c_void_p * len(kwargs))(*map(_k, kwargs.keys())),
+            (c_void_p * len(kwargs))(*values),
+            len(kwargs),
+            _found.kCFTypeDictionaryKeyCallBacks,
+            _found.kCFTypeDictionaryValueCallBacks,
+        )
 
 
 def _raise_osstatus(status: int, action: str) -> None:
@@ -139,32 +158,45 @@ def _copy_wrapping_key() -> bytes | None:
         kSecReturnData=True,
     )
     data = c_void_p()
-    status = int(SecItemCopyMatching(query, byref(data)))
-    if status == _ERR_ITEM_NOT_FOUND:
-        return None
-    _raise_osstatus(status, "SecItemCopyMatching")
-    return ctypes.string_at(CFDataGetBytePtr(data), CFDataGetLength(data))
+    try:
+        status = int(SecItemCopyMatching(query, byref(data)))
+        if status == _ERR_ITEM_NOT_FOUND:
+            return None
+        _raise_osstatus(status, "SecItemCopyMatching")
+        return ctypes.string_at(CFDataGetBytePtr(data), CFDataGetLength(data))
+    finally:
+        if data:
+            CFRelease(data)
+        CFRelease(query)
 
 
 def _allow_all_access() -> c_void_p:
     access = c_void_p()
-    status = int(SecAccessCreate(_cf("pipefy wrapping key"), None, byref(access)))
-    _raise_osstatus(status, "SecAccessCreate")
-    return access
+    description = _cf("pipefy wrapping key")
+    try:
+        status = int(SecAccessCreate(description, None, byref(access)))
+        _raise_osstatus(status, "SecAccessCreate")
+        return access
+    finally:
+        CFRelease(description)
 
 
 def _add_wrapping_key(key: bytes) -> None:
-    query = _query(
-        kSecClass=_k("kSecClassGenericPassword"),
-        kSecAttrService=WRAPPING_KEYCHAIN_SERVICE,
-        kSecAttrAccount=WRAPPING_KEYCHAIN_ACCOUNT,
-        kSecValueData=key,
-        kSecAttrAccess=_allow_all_access(),
-    )
-    status = int(SecItemAdd(query, None))
-    if status == _ERR_DUPLICATE_ITEM:
-        return
-    _raise_osstatus(status, "SecItemAdd")
+    with ExitStack() as references:
+        access = _allow_all_access()
+        references.callback(CFRelease, access)
+        query = _query(
+            kSecClass=_k("kSecClassGenericPassword"),
+            kSecAttrService=WRAPPING_KEYCHAIN_SERVICE,
+            kSecAttrAccount=WRAPPING_KEYCHAIN_ACCOUNT,
+            kSecValueData=key,
+            kSecAttrAccess=access,
+        )
+        references.callback(CFRelease, query)
+        status = int(SecItemAdd(query, None))
+        if status == _ERR_DUPLICATE_ITEM:
+            return
+        _raise_osstatus(status, "SecItemAdd")
 
 
 class DarwinKeychainWrappingKey:
