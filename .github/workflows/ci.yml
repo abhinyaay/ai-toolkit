@@ -25,13 +25,14 @@ jobs:
     - name: Install dependencies
       run: uv sync --locked --all-extras --dev
     # The Linux suite cannot exercise Security.framework ACLs or Windows DPAPI.
-    # These tests use in-memory ACLs and temporary files, never user credentials.
+    # These tests use synthetic credentials and temporary files/keychains.
     - name: Test native encrypted session storage
       run: >-
         uv run pytest -c pyproject.toml
         packages/auth/tests/test_encrypted_file_keyring.py
         packages/auth/tests/test_wrapping_key.py
         packages/auth/tests/test_wrapping_key_darwin.py
+        packages/auth/tests/test_wrapping_key_darwin_persistence.py
         packages/auth/tests/test_wrapping_key_windows.py
 
   lint:
