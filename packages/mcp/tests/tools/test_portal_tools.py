@@ -1222,6 +1222,70 @@ async def test_create_portal_element_success(
     assert payload["data"]["type"] == "forms"
 
 
+_PLACING_LINK_METADATA = {"linkName": "Docs", "linkUrl": "https://example.com"}
+_PLACING_LAYOUT = [
+    {"id": "row-1", "type": "row", "children": ["el-1"]},
+    {"id": "row-2", "type": "row", "children": ["el-new"]},
+]
+
+
+@pytest.mark.anyio
+async def test_create_portal_element_with_layout_places_element(
+    portal_session, mock_portal_client
+):
+    mock_portal_client.create_portal_element = AsyncMock(return_value=_CREATED_ELEMENT)
+
+    async with portal_session as session:
+        result = await session.call_tool(
+            "create_portal_element",
+            {
+                "page_id": _PAGE_UUID,
+                "type": "link",
+                "metadata": _PLACING_LINK_METADATA,
+                "element_id": "el-new",
+                "layout": _PLACING_LAYOUT,
+            },
+        )
+
+    assert result.is_error is False
+    mock_portal_client.create_portal_element.assert_awaited_once_with(
+        _PAGE_UUID,
+        type="link",
+        metadata=_PLACING_LINK_METADATA,
+        data_sources=[],
+        element_id="el-new",
+        layout=_PLACING_LAYOUT,
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"element_id": "el-new", "layout": {"rows": _PLACING_LAYOUT}},
+        {"layout": _PLACING_LAYOUT},
+        {"element_id": "el-elsewhere", "layout": _PLACING_LAYOUT},
+    ],
+    ids=["object-wrapper", "missing-element-id", "element-not-in-rows"],
+)
+async def test_create_portal_element_rejects_unplaceable_layout_before_client(
+    portal_session, mock_portal_client, extract_payload, arguments
+):
+    async with portal_session as session:
+        result = await session.call_tool(
+            "create_portal_element",
+            {
+                "page_id": _PAGE_UUID,
+                "type": "link",
+                "metadata": _PLACING_LINK_METADATA,
+                **arguments,
+            },
+        )
+
+    mock_portal_client.create_portal_element.assert_not_called()
+    assert extract_payload(result)["success"] is False
+
+
 @pytest.mark.anyio
 async def test_create_portal_element_rejects_invalid_metadata_before_client(
     portal_session, mock_portal_client, extract_payload

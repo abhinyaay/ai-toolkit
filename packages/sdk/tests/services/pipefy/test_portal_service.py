@@ -925,6 +925,30 @@ async def test_create_portal_element_calls_create_element_with_validated_input()
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_create_portal_element_sends_layout_rows_as_interfaces_json() -> None:
+    """layout rides on createElement as the serialized row array plus the client id."""
+    service, _public, interfaces_executor = _make_interfaces_service(
+        _CREATE_ELEMENT_RESPONSE,
+    )
+    rows = [{"id": "row-1", "type": "row", "children": ["el-new"]}]
+
+    await service.create_portal_element(
+        _PAGE_ID,
+        type="link",
+        metadata={"linkName": "Docs", "linkUrl": "https://example.com"},
+        element_id="el-new",
+        layout=rows,
+    )
+
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables["input"]["id"] == "el-new"
+    assert variables["input"]["layout"] == json.dumps(
+        rows, separators=(",", ":"), ensure_ascii=False
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_create_portal_element_always_sends_empty_data_sources_for_link() -> None:
     """Link creates must send data_sources: [] so Pipefy does not receive null."""
     service, _public, interfaces_executor = _make_interfaces_service(

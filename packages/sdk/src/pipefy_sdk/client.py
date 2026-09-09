@@ -1983,7 +1983,7 @@ class PipefyClient:
         data_sources: list[dict[str, Any]] | None = None,
         element_id: str | None = None,
         editable: bool | None = None,
-        layout: dict[str, Any] | None = None,
+        layout: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Create a portal page element.
 
@@ -1994,7 +1994,8 @@ class PipefyClient:
             data_sources: Optional data source bindings.
             element_id: Optional client-provided element UUID.
             editable: Optional editable flag.
-            layout: Optional layout JSON.
+            layout: Optional full page layout row array (``get_portal`` ->
+                ``pages[].layout``) with a row whose children list ``element_id``.
         """
         return await self._portal_service.create_portal_element(
             page_id,
