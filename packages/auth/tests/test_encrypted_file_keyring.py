@@ -211,3 +211,71 @@ def test_concurrent_set_password_keeps_both_usernames(tmp_path: Path):
     assert ring.get_password("pipefy", "alice") == "secret-a"
     assert ring.get_password("pipefy", "bob") == "secret-b"
     assert not (tmp_path / "session.enc.tmp").exists()
+
+
+def test_wrapping_key_create_failure_is_a_keyring_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    wrap = InMemoryWrappingKey()
+    ring = EncryptedFileKeyring(tmp_path / SESSION_ENC_FILENAME, wrap)
+
+    def fail_create():
+        raise OSError("Keychain access denied")
+
+    monkeypatch.setattr(wrap, "load_or_create", fail_create)
+    with pytest.raises(KeyringError, match="Keychain access denied"):
+        ring.set_password("pipefy", "alice", "new")
+    assert not Path(ring.file_path).exists()
+
+
+@pytest.mark.parametrize("operation", ["set_password", "delete_password"])
+def test_lock_file_failure_is_a_keyring_error(tmp_path: Path, operation: str):
+    path = tmp_path / SESSION_ENC_FILENAME
+    path.with_name(path.name + ".lock").mkdir()
+    ring = EncryptedFileKeyring(path, InMemoryWrappingKey())
+    args = (
+        ("pipefy", "alice", "new")
+        if operation == "set_password"
+        else ("pipefy", "alice")
+    )
+    with pytest.raises(KeyringError):
+        getattr(ring, operation)(*args)
+
+
+def test_failed_session_read_does_not_discard_other_accounts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    path = tmp_path / SESSION_ENC_FILENAME
+    ring = EncryptedFileKeyring(path, InMemoryWrappingKey())
+    ring.set_password("pipefy", "alice", "keep")
+    original = path.read_bytes()
+
+    def deny_read(_path):
+        raise PermissionError("session read denied")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "read_bytes", deny_read)
+        with pytest.raises(KeyringError, match="session read denied"):
+            ring.set_password("pipefy", "bob", "new")
+    assert path.read_bytes() == original
+    assert ring.get_password("pipefy", "alice") == "keep"
+
+
+def test_failed_session_unlink_becomes_session_delete_error(
+    _isolated_keyring, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    from pipefy_auth.storage import SessionDeleteError, delete_session, keychain_key
+
+    issuer = "https://auth.example.com"
+    path = tmp_path / SESSION_ENC_FILENAME
+    ring = EncryptedFileKeyring(path, InMemoryWrappingKey())
+    ring.set_password("pipefy", keychain_key(issuer, "client"), "keep")
+    keyring.set_keyring(ring)
+
+    def deny_unlink(_path, **kwargs):
+        raise PermissionError("session delete denied")
+
+    monkeypatch.setattr(Path, "unlink", deny_unlink)
+    with pytest.raises(SessionDeleteError, match="session delete denied"):
+        delete_session(issuer=issuer, client_id="client")
+    assert path.exists()

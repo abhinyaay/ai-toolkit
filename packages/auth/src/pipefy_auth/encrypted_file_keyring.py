@@ -126,6 +126,10 @@ class EncryptedFileKeyring(KeyringBackend):
             raise KeyringError(
                 f"could not lock encrypted session file {self._path}: {exc}"
             ) from exc
+        except OSError as exc:
+            raise KeyringError(
+                f"could not write encrypted session file {self._path}: {exc}"
+            ) from exc
 
     def delete_password(self, service: str, username: str) -> None:
         try:
@@ -134,6 +138,10 @@ class EncryptedFileKeyring(KeyringBackend):
         except RefreshLockTimeout as exc:
             raise KeyringError(
                 f"could not lock encrypted session file {self._path}: {exc}"
+            ) from exc
+        except OSError as exc:
+            raise KeyringError(
+                f"could not delete encrypted session file {self._path}: {exc}"
             ) from exc
 
     def _delete_password_locked(self, service: str, username: str) -> None:
@@ -153,9 +161,9 @@ class EncryptedFileKeyring(KeyringBackend):
         self._dump_entries(entries)
 
     def _load_entries(self) -> dict[str, dict[str, str]] | None:
-        if not self._path.exists():
-            return None
         try:
+            if not self._path.exists():
+                return None
             key = self._wrapping_key.load()
             if key is None:
                 raise KeyringError(
@@ -178,7 +186,6 @@ class EncryptedFileKeyring(KeyringBackend):
         try:
             return self._unseal_entries(key)
         except (
-            OSError,
             ValueError,
             json.JSONDecodeError,
             UnicodeDecodeError,
@@ -195,12 +202,7 @@ class EncryptedFileKeyring(KeyringBackend):
     def _dump_entries(self, entries: dict[str, dict[str, str]]) -> None:
         plaintext = json.dumps(entries, ensure_ascii=False).encode("utf-8")
         blob = seal_session_blob(plaintext, self._wrapping_key.load_or_create())
-        try:
-            replace_file_atomically(self._path, blob)
-        except OSError as exc:
-            raise KeyringError(
-                f"could not write encrypted session file {self._path}: {exc}"
-            ) from exc
+        replace_file_atomically(self._path, blob)
 
 
 def install_encrypted_file_keyring(
