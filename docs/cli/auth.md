@@ -270,7 +270,7 @@ The stored shape is keyed by `(issuer_host, client_id)`: one active session per 
 
 Each `pipefy <cmd>` invocation refreshes the access token before it builds the client, when that token has less than **60 s** of life left. A failure surfaces as `Stored Pipefy session could not be refreshed: ...`, with no fallback to another tier. The precedence chain is evaluated before the refresh, so a user who chose tier 4 gets a hard "re-login" signal rather than a silent service-account swap.
 
-Reactive refresh-on-401 (for tokens revoked mid-session) is a separate slice, tracked in issue #137.
+A token revoked mid-session is handled separately, and the eager refresh above never sees it. When an API call answers 401, the CLI forces one refresh and retries the call. When that refresh returns nothing, or returns the same token, the 401 propagates, so you get a "session expired" error rather than a loop.
 
 ### Keychain backends
 
