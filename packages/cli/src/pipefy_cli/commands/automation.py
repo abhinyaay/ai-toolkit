@@ -78,7 +78,7 @@ def automation_list(
             after=cursor,
         )
 
-    page = run_pipefy_client_coroutine(ctx, factory)
+    page = run_pipefy_client_coroutine(ctx, factory, value_error_exit_code=2)
     if json_out:
         render_json(page)
         return

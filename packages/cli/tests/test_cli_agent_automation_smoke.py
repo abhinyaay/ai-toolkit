@@ -1135,6 +1135,24 @@ def test_ai_automation_list_json_includes_pagination(
     )
 
 
+def test_automation_list_maps_value_error_to_exit_2(
+    runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    """Rendering the page here instead of through run_cli_command keeps exit 2."""
+    oauth_env("automation-list-value-error")
+    mock_client = MagicMock()
+    mock_client.get_automations = AsyncMock(
+        side_effect=ValueError("automations missing from response")
+    )
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        r = runner.invoke(app, ["automation", "list", "--org", "7"])
+    assert r.exit_code == 2
+    assert "automations missing from response" in (r.stderr or "") + r.stdout
+
+
 def test_automation_list_rejects_first_above_api_cap(
     runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
 ):
