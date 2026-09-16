@@ -719,6 +719,46 @@ async def test_update_fields_values_marks_unverified_when_readback_fails():
     assert exc.verified is False
     assert exc.applied_field_ids == []
     assert "Could not re-read" in str(exc)
+    assert "Retry only" in str(exc)
+    assert "read it" not in str(exc)
+
+
+@pytest.mark.unit
+def test_partial_card_update_error_unverified_names_retry_only():
+    """Unverified copy names retry-only-rejected; it does not tell the caller to re-fetch."""
+    exc = PartialCardUpdateError(
+        card_id="1",
+        applied_field_ids=[],
+        rejected=[{"field_id": "a", "message": "nope"}],
+        verified=False,
+    )
+    assert "Retry only" in str(exc)
+    assert "read it" not in str(exc)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("field_path", [None, []])
+async def test_update_fields_values_unattributed_user_error_does_not_mark_applied(
+    field_path,
+):
+    """A missing or empty ``field`` path cannot subtract from the requested set.
+
+    A pre-filled id on the card is therefore not reported as written by this batch.
+    """
+    executor = mock_executor()
+    executor.execute_query.side_effect = [
+        _partial_payload([{"field": field_path, "message": "something broke"}]),
+        _readback(["a"]),
+    ]
+    service = CardService(executor=executor)
+
+    with pytest.raises(PartialCardUpdateError) as excinfo:
+        await service.update_card(1, field_updates=[{"field_id": "a", "value": "x"}])
+
+    exc = excinfo.value
+    assert exc.applied_field_ids == []
+    assert "something broke" in str(exc)
 
 
 @pytest.mark.unit
@@ -736,7 +776,8 @@ async def test_update_fields_values_user_error_without_path_keeps_message():
         await service.update_card(1, field_updates=[{"field_id": "a", "value": "x"}])
 
     assert excinfo.value.rejected == [{"field_id": "", "message": "something broke"}]
-    assert "no per-field detail returned" in str(excinfo.value)
+    assert "something broke" in str(excinfo.value)
+    assert "no per-field detail returned" not in str(excinfo.value)
 
 
 @pytest.mark.unit

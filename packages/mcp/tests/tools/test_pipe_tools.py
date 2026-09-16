@@ -2158,6 +2158,8 @@ class TestUpdateCardTool:
         payload = extract_payload(result)
         assert payload["verified"] is False
         assert "Could not re-read" in tool_error_message(payload)
+        assert "Retry only" in tool_error_message(payload)
+        assert "read it" not in tool_error_message(payload)
 
     async def test_graphql_error_returns_envelope_not_raw_exception(
         self,

@@ -85,6 +85,20 @@ def _rejected_entries(payload: dict) -> list[dict[str, str]]:
     return rows
 
 
+def _applied_candidate_ids(
+    requested_ids: list[str], rejected: list[dict[str, str]]
+) -> list[str]:
+    """Ids that might have been written: requested minus named rejections.
+
+    Any unattributed ``userErrors`` row (empty or missing ``field_id``) fail-closes
+    the set: a pre-filled field on the card is not evidence this batch wrote it.
+    """
+    if any(not entry.get("field_id") for entry in rejected):
+        return []
+    rejected_ids = {entry["field_id"] for entry in rejected}
+    return [fid for fid in requested_ids if fid not in rejected_ids]
+
+
 def _filled_field_ids(readback: dict) -> set[str]:
     """Field ids present on the card after the write.
 
@@ -355,10 +369,9 @@ class CardService:
         requested_ids = [
             str(entry["fieldId"]) for entry in formatted_values if entry.get("fieldId")
         ]
-        rejected_ids = {entry["field_id"] for entry in rejected}
         await self._raise_partial_card_update(
             card_id=str(card_id),
-            candidate_ids=[fid for fid in requested_ids if fid not in rejected_ids],
+            candidate_ids=_applied_candidate_ids(requested_ids, rejected),
             rejected=rejected,
         )
 

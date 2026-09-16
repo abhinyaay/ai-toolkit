@@ -62,17 +62,20 @@ def _partial_card_update_message(
     verified: bool,
 ) -> str:
     """One line naming what landed, what did not, and why."""
-    parts = [
-        f"{entry['field_id']}: {entry['message']}"
-        for entry in rejected
-        if entry.get("field_id")
-    ]
+    parts: list[str] = []
+    for entry in rejected:
+        field_id = entry.get("field_id") or ""
+        message = entry.get("message") or ""
+        if field_id:
+            parts.append(f"{field_id}: {message}")
+        elif message:
+            parts.append(message)
     detail = "; ".join(parts) if parts else "no per-field detail returned"
     if not verified:
         return (
             f"Card {card_id} update partly rejected ({detail}). Could not re-read the "
-            f"card to confirm which fields were written; read it before retrying, and "
-            f"do not resend an ADD operation blind."
+            f"card to confirm which fields were written. Retry only the rejected "
+            f"fields; do not resend an ADD operation for any other requested id."
         )
     if applied_field_ids:
         applied = ", ".join(applied_field_ids)
