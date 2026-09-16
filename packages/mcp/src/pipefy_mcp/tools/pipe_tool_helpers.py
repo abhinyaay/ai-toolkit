@@ -485,7 +485,7 @@ def build_card_partial_update_failure(
     The split matters to the caller because the obvious recovery is wrong:
     resending the whole batch re-applies the fields that already landed, and on
     ``operation: "ADD"`` that appends duplicates. Mirrors
-    ``build_create_agent_partial_failure`` (#520), the other write in this server
+    ``build_create_agent_partial_failure``, the other write in this server
     that half succeeds.
 
     Args:
