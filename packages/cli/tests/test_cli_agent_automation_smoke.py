@@ -1062,6 +1062,30 @@ def test_automation_list_json_forwards_page_flags(
     )
 
 
+def test_automation_list_human_prints_table_and_page_counts(
+    runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("automation-list-human")
+    page = {
+        "nodes": [{"id": "a1", "name": "R", "active": True}],
+        "totalCount": 210,
+        "pageInfo": {"hasNextPage": True, "endCursor": "cursor-50"},
+    }
+    mock_client = MagicMock()
+    mock_client.get_automations = AsyncMock(return_value=page)
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        r = runner.invoke(app, ["automation", "list", "--org", "7"])
+    assert r.exit_code == 0, r.stdout + (r.stderr or "")
+    assert "R" in r.stdout
+    assert "a1" in r.stdout
+    assert "totalCount=210" in r.stdout
+    assert "hasNextPage=True" in r.stdout
+    assert '"nodes"' not in r.stdout
+
+
 def test_automation_list_rejects_first_above_api_cap(
     runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
 ):

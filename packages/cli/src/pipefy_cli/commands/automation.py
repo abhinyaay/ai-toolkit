@@ -18,7 +18,10 @@ from pipefy_cli.commands._common import (
     parse_json_value,
     resource_id_argument,
     run_cli_command,
+    run_pipefy_client_coroutine,
+    validate_cards_page_size,
 )
+from pipefy_cli.output import render_json, render_rich
 
 automation_app = typer.Typer(
     help="Traditional automations and related exports.", no_args_is_help=True
@@ -59,14 +62,12 @@ def automation_list(
 ) -> None:
     """List one page of automation rules (``get_automations``).
 
-    The API caps a page at 50 rules. Output is the page: ``nodes``, ``totalCount``,
-    and ``pageInfo`` (``hasNextPage``, ``endCursor``).
+    The API caps a page at 50 rules. ``--json`` prints the page (``nodes``,
+    ``totalCount``, and ``pageInfo``). Without ``--json``, rows print as a table
+    with ``totalCount`` and ``hasNextPage`` beside it.
     """
 
-    if first is not None and (first < 1 or first > AUTOMATIONS_LIST_MAX_PAGE_SIZE):
-        raise typer.BadParameter(
-            f"--first must be between 1 and {AUTOMATIONS_LIST_MAX_PAGE_SIZE}."
-        )
+    first = validate_cards_page_size(first, max_size=AUTOMATIONS_LIST_MAX_PAGE_SIZE)
     cursor = after.strip() if after and after.strip() else None
 
     async def factory(client: PipefyClient):
@@ -77,7 +78,16 @@ def automation_list(
             after=cursor,
         )
 
-    run_cli_command(ctx, json_out, factory)
+    page = run_pipefy_client_coroutine(ctx, factory)
+    if json_out:
+        render_json(page)
+        return
+    render_rich(page["nodes"])
+    info = page["pageInfo"]
+    typer.echo(
+        f"totalCount={page['totalCount']} hasNextPage={info.get('hasNextPage')} "
+        f"endCursor={info.get('endCursor')}"
+    )
 
 
 @automation_app.command("get", context_settings=ID_POSITIONAL_CONTEXT_SETTINGS)
