@@ -8,12 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.2-beta.1] - 2026-09-11
+
+### Changed
+
+- **Release track**: `0.5.2-beta.1` is the next published pre-release after `0.5.0-beta.1`. `0.5.1` on `main` was not tagged; there is no new tool surface since that version.
+
+## [0.5.1] - 2026-09-11
+
 ### Fixed
 
 - **Automation listings**: SDK, MCP, and CLI now return trigger IDs, event parameters, conditions, `actionEnabled`, and `disabledReason` for organization and pipe listings, avoiding a detail call per rule to audit its filters and whether the action is enabled. Listings are paged: the API caps a page at 50 rules, so `get_automations` / `pipefy automation list` accept `first` / `after` and report `totalCount` and `hasNextPage` instead of silently returning the first 50. `get_ai_automations` / `pipefy ai-automation list` expose the same page block for the mixed connection they filter. Human `pipefy automation list` prints a table of `nodes` plus the page counts. Phase-delete preview follows every page of rules. An empty pipe no longer fails `get_automation_logs_by_repo`. The last page of an audit names itself so `11 of 61` is not read as a shortfall. (#612)
 
 - **Cursor Marketplace plugin**: hosted MCP config is `.mcp.json` only. `.cursor-plugin/plugin.json` points `mcpServers` at `./.mcp.json`, the same file Claude Code auto-discovers.
 - **Cursor plugin listing title**: adding this repo as a GitHub marketplace title-cased the slug `ai-toolkit` to "Ai Toolkit". `.cursor-plugin/marketplace.json` names the marketplace `pipefy`, and the plugin `displayName` is `Pipefy`, matching other company plugins.
+- **MCP (`create_ipaas_connection`)**: `readOnlyHint` is false. The tool upserts credentials and was advertised as read-only. (#644)
 
 ### Changed
 

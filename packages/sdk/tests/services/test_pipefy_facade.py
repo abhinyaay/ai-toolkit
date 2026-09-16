@@ -893,7 +893,7 @@ async def test_pipefy_client_invite_members_propagates_value_error(mock_settings
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_automation_extra_input_camel_aliases_reach_service_as_api_names():
-    """`extra_input` camelCase aliases are rewritten to the API field names (issue #275)."""
+    """`extra_input` camelCase aliases are rewritten to the API field names."""
     automation_service = AsyncMock()
     automation_service.create_automation = AsyncMock(
         return_value={"ok": "create_automation"}
