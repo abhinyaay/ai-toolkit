@@ -10,6 +10,7 @@ from _mcp_compat import (
 from pipefy_sdk import AutomationConditionInput, PipefyClient, PipefyGraphQLError
 
 from pipefy_mcp.core.tool_error_envelope import tool_error_message
+from pipefy_mcp.tools.automation_tool_helpers import build_automations_listed_message
 from pipefy_mcp.tools.automation_tools import AutomationTools
 from tools.conftest import assert_invalid_arguments_envelope, build_tool_test_server
 from tools.destructive_confirm_test_support import confirm_after_preview
@@ -250,7 +251,7 @@ async def test_get_automations_success(
         "page_size": 50,
         "total_count": 1,
     }
-    assert payload["message"] == "Automations listed: 1 of 1."
+    assert payload["message"] == ("Automations listed: 1 of 1. This is the last page.")
 
 
 @pytest.mark.anyio
@@ -279,6 +280,19 @@ async def test_get_automations_signals_truncated_listing(
     assert payload["pagination"]["total_count"] == 210
     assert "1 of 210" in payload["message"]
     assert "after=pagination.end_cursor" in payload["message"]
+    assert "last page" not in payload["message"]
+
+
+def test_build_automations_listed_message_last_page_is_not_a_shortfall():
+    message = build_automations_listed_message(11, 61, has_more=False)
+    assert message == ("Automations listed: 11 of 61. This is the last page.")
+
+
+def test_build_automations_listed_message_has_more_explains_how_to_continue():
+    message = build_automations_listed_message(50, 61, has_more=True)
+    assert "50 of 61" in message
+    assert "after=pagination.end_cursor" in message
+    assert "last page" not in message
 
 
 @pytest.mark.anyio

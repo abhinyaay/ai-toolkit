@@ -125,15 +125,16 @@ def build_automations_listed_message(listed: int, total: int, *, has_more: bool)
     Args:
         listed: Rows in this page.
         total: ``totalCount`` of the connection.
-        has_more: ``pageInfo.hasNextPage``; when true the listing is incomplete.
+        has_more: ``pageInfo.hasNextPage``; when false the message names the last page
+            so a short page is not read as a missing remainder.
     """
     message = f"Automations listed: {listed} of {total}."
-    if not has_more:
-        return message
-    return (
-        f"{message} More rules exist; call again with after=pagination.end_cursor. "
-        "The listing is incomplete until pagination.has_more is false."
-    )
+    if has_more:
+        return (
+            f"{message} More rules exist; call again with after=pagination.end_cursor. "
+            "The listing is incomplete until pagination.has_more is false."
+        )
+    return f"{message} This is the last page."
 
 
 def build_automation_error_payload(
