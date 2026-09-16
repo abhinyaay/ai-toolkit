@@ -2357,7 +2357,7 @@ class PipefyClient:
             search_term: Free-text search.
         """
         rules = await self.get_automations(pipe_id=str(repo_id))
-        if not rules:
+        if not rules["nodes"]:
             return {
                 "automationLogsByRepo": {
                     "nodes": [],

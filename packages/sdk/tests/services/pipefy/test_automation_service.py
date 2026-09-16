@@ -812,14 +812,22 @@ async def test_simulate_automation_transport_error():
         )
 
 
+def _empty_automation_list_page():
+    return {
+        "nodes": [],
+        "totalCount": 0,
+        "pageInfo": {"hasNextPage": False, "endCursor": None},
+    }
+
+
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_automation_logs_by_repo_skips_graphql_when_pipe_has_no_automations():
-    """Facade short-circuits before automationLogsByRepo when ``get_automations`` is empty."""
+    """Facade short-circuits before automationLogsByRepo when the page has no rows."""
     from pipefy_sdk.client import PipefyClient
 
     client = PipefyClient.__new__(PipefyClient)
-    client.get_automations = AsyncMock(return_value=[])
+    client.get_automations = AsyncMock(return_value=_empty_automation_list_page())
     obs = AsyncMock()
     obs.get_automation_logs_by_repo = AsyncMock(
         return_value={"automationLogsByRepo": {"should_not": "call"}}
@@ -833,6 +841,29 @@ async def test_get_automation_logs_by_repo_skips_graphql_when_pipe_has_no_automa
     assert out["automationLogsByRepo"]["nodes"] == []
     assert out["automationLogsByRepo"]["totalCount"] == 0
     assert out["automationLogsByRepo"]["pageInfo"]["hasNextPage"] is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_automation_logs_by_repo_fetches_logs_when_pipe_has_automations():
+    from pipefy_sdk.client import PipefyClient
+
+    logs = {"automationLogsByRepo": {"nodes": [{"id": "log-1"}], "totalCount": 1}}
+    client = PipefyClient.__new__(PipefyClient)
+    client.get_automations = AsyncMock(
+        return_value={
+            "nodes": [{"id": "a1"}],
+            "totalCount": 1,
+            "pageInfo": {"hasNextPage": False, "endCursor": None},
+        }
+    )
+    obs = AsyncMock()
+    obs.get_automation_logs_by_repo = AsyncMock(return_value=logs)
+    client._observability_service = obs
+
+    out = await PipefyClient.get_automation_logs_by_repo(client, "repo-77")
+    assert out == logs
+    obs.get_automation_logs_by_repo.assert_awaited_once()
 
 
 @pytest.mark.parametrize(
