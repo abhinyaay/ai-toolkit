@@ -146,7 +146,7 @@ AI automations are separate from traditional rules above. They are prompt-driven
 | `create_ai_automation` | No | Prompt-driven automation writing to one or more card fields (AI must be enabled on the pipe). |
 | `update_ai_automation` | No | Change name, `active`, prompt, `field_ids`, or `condition`. |
 | `get_ai_automation` | Yes | Loads one AI automation by id (same GraphQL read path as `get_automation`). |
-| `get_ai_automations` | Yes | Lists **only** `generate_with_ai` automations for the pipe (optional org resolution). |
+| `get_ai_automations` | Yes | Lists **only** `generate_with_ai` automations from one page of the pipe's rules (optional org resolution, `first` 1 to 50, `after`). `pagination` describes the mixed connection, not the AI subset; continue while `has_more` is true before concluding an AI rule does not exist. |
 | `delete_ai_automation` | No | Permanently deletes an AI automation (`destructiveHint=True`; [two-step](cross-cutting.md#destructive-operations) with `confirmation_token`). |
 | `validate_ai_automation_prompt` | Yes | Pre-flight validation: field refs in the prompt, `field_ids`, optional `event_id`, and `pipe.preferences.aiAgentsEnabled`. |
 

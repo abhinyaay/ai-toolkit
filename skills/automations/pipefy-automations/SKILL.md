@@ -40,7 +40,7 @@ Logs, usage, and job exports for automations live in [skills/observability/pipef
 
 | Tool (MCP) | CLI | Purpose |
 |------------|-----|---------|
-| `get_ai_automations` | `pipefy ai-automation list` | List AI automations for a pipe. |
+| `get_ai_automations` | `pipefy ai-automation list` | List `generate_with_ai` rules from one page of the pipe's mixed listing. `pagination` is of that mixed page (cap 50), not of the AI subset; continue with `after` while `has_more` is true before concluding an AI rule does not exist. |
 | `get_ai_automation` | `pipefy ai-automation get` | Full config including prompt, fields, condition. |
 | `create_ai_automation` | `pipefy ai-automation create` | Create a prompt-driven automation (requires AI enabled on the pipe). |
 | `update_ai_automation` | `pipefy ai-automation update` | Change name, `active`, prompt, `field_ids`, or `condition`. |

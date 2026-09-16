@@ -365,11 +365,19 @@ Usage: pipefy ai-automation list [OPTIONS]
  List AI automations for a pipe (``get_ai_automations`` / filtered
  ``get_automations``).
 
+ One page of the pipe's rules (cap 50) is fetched, then filtered to
+ ``generate_with_ai``. Pagination describes that mixed page, not the AI subset.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --pipe                        TEXT  Pipe id. [required]                   │
-│    --organization,--org          TEXT  Optional organization id.             │
+│ *  --pipe                        TEXT     Pipe id. [required]                │
+│    --organization,--org          TEXT     Optional organization id.          │
+│    --first                       INTEGER  Page size of the mixed listing, 1  │
+│                                           to 50 (the API cap). Defaults to   │
+│                                           the cap.                           │
+│    --after                       TEXT     pageInfo.endCursor from the        │
+│                                           previous page.                     │
 │    --json                -j                                                  │
-│    --help                              Show this message and exit.           │
+│    --help                                 Show this message and exit.        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ### HELP ai-automation/update

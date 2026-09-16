@@ -1086,6 +1086,55 @@ def test_automation_list_human_prints_table_and_page_counts(
     assert '"nodes"' not in r.stdout
 
 
+def test_ai_automation_list_json_includes_pagination(
+    runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("ai-automation-list-page")
+    page = {
+        "nodes": [
+            {"id": "1", "name": "AI", "action_id": "generate_with_ai"},
+            {"id": "2", "name": "HTTP", "action_id": "send_http_request"},
+        ],
+        "totalCount": 210,
+        "pageInfo": {"hasNextPage": True, "endCursor": "cursor-50"},
+    }
+    mock_client = MagicMock()
+    mock_client.get_automations = AsyncMock(return_value=page)
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        r = runner.invoke(
+            app,
+            [
+                "ai-automation",
+                "list",
+                "--pipe",
+                "9",
+                "--first",
+                "10",
+                "--after",
+                "cursor-40",
+                "--json",
+            ],
+        )
+    assert r.exit_code == 0, r.stdout + (r.stderr or "")
+    payload = json.loads(r.stdout)
+    assert payload["success"] is True
+    assert payload["data"] == [
+        {"id": "1", "name": "AI", "action_id": "generate_with_ai"}
+    ]
+    assert payload["pagination"] == {
+        "has_more": True,
+        "end_cursor": "cursor-50",
+        "page_size": 10,
+        "total_count": 210,
+    }
+    mock_client.get_automations.assert_awaited_once_with(
+        organization_id=None, pipe_id="9", first=10, after="cursor-40"
+    )
+
+
 def test_automation_list_rejects_first_above_api_cap(
     runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
 ):
