@@ -92,7 +92,8 @@ When any entry is rejected, `update_card` and `fill_card_phase_fields` return:
 that block has been observed omitting a field whose value a follow-up read showed had
 persisted, so it cannot be used to decide what landed. When `verified` is `false` the
 re-read did not run, `applied_field_ids` is empty for lack of evidence rather than
-because nothing was written, and the card should be read before any retry.
+because nothing was written; retry only the rejected fields and do not resend an ADD
+operation for any other requested id.
 
 Retry only the entries named in `rejected_fields`.
 

@@ -1090,7 +1090,8 @@ class PipeTools:
             that did persist) and ``rejected_fields`` carrying the API's message per
             field. Retry only the rejected entries: resending an applied one with
             ``operation: "ADD"`` appends a duplicate. When ``verified`` is false the
-            re-read did not run, so read the card before any retry.
+            re-read did not run, so retry only the rejected fields; do not resend
+            an ADD operation for any other requested id.
 
             Examples:
                 update_card(card_id=123, title="New Title")
@@ -1241,7 +1242,11 @@ class PipeTools:
                     ``fields`` directly to the API. Recommended for AI agent workflows.
 
             Returns:
-                dict: GraphQL response with success status and updated card information.
+                dict: GraphQL response with success status and updated card
+                    information on a full write. A partial ``updateFieldsValues``
+                    rejection returns the same ``CARD_UPDATE_PARTIALLY_APPLIED``
+                    envelope as ``update_card`` field mode (``applied_field_ids``,
+                    ``rejected_fields``, ``verified``).
             """
             client = get_pipefy_client(ctx)
             try:
