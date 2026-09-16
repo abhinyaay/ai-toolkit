@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Literal, cast
 
-from pipefy_sdk import PipefyClient
+from pipefy_sdk import AUTOMATIONS_LIST_MAX_PAGE_SIZE, PipefyClient
 from typing_extensions import NotRequired, TypedDict
 
 from pipefy_mcp.core.tool_error_envelope import ToolErrorDetail, tool_error
@@ -452,17 +452,38 @@ def _build_phase_dependents_hint(deps: dict[str, Any]) -> str:
     return f"Deleting this phase will remove {body}. This action is irreversible."
 
 
+async def _list_pipe_automation_summaries(
+    client: PipefyClient, pipe_id: str
+) -> list[dict[str, Any]]:
+    """Collect every listing row for ``pipe_id``, following ``pageInfo`` until the end."""
+    rows: list[dict[str, Any]] = []
+    after: str | None = None
+    while True:
+        page = await client.get_automations(
+            pipe_id=str(pipe_id),
+            first=AUTOMATIONS_LIST_MAX_PAGE_SIZE,
+            after=after,
+        )
+        rows.extend(page["nodes"])
+        info = page["pageInfo"]
+        if info.get("hasNextPage") is not True:
+            return rows
+        cursor = info.get("endCursor")
+        if not isinstance(cursor, str) or not cursor or cursor == after:
+            return rows
+        after = cursor
+
+
 async def _automations_referencing_phase(
     client: PipefyClient, pipe_id: str, phase_id: str
 ) -> list[dict[str, Any]]:
     """List automations in ``pipe_id`` whose config references ``phase_id`` (summary rows).
 
-    Reads the first page of the pipe's rules (the API caps a page at 50) and returns
-    a filtered summary list. Exceptions propagate to the outer gather. Inner
+    Pages the pipe's rules (the API caps a page at 50) and returns a filtered
+    summary list. Exceptions propagate to the outer gather. Inner
     per-automation detail fetches are allowed to fail individually.
     """
-    page = await client.get_automations(pipe_id=str(pipe_id))
-    rows = page["nodes"]
+    rows = await _list_pipe_automation_summaries(client, pipe_id)
     if not rows:
         return []
     ids = [str(r.get("id")) for r in rows if isinstance(r, dict) and r.get("id")]

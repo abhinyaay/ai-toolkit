@@ -112,7 +112,7 @@ def mock_pipe_config_client():
     client.delete_field_condition = AsyncMock()
     client.get_field_conditions = AsyncMock()
     client.get_field_condition = AsyncMock()
-    client.get_automations = AsyncMock()
+    client.get_automations = AsyncMock(return_value=_automation_page([]))
     client.get_automation = AsyncMock()
     return client
 
@@ -533,6 +533,54 @@ async def test_delete_phase_preview_all_sublookups_succeed(
     # Pin the cheap-count contract: native scalar, zero card enumeration.
     mock_pipe_config_client.get_phase_cards_count.assert_awaited_once_with("55")
     mock_pipe_config_client.get_cards.assert_not_called()
+
+
+@pytest.mark.anyio
+async def test_delete_phase_preview_pages_automations_past_the_api_cap(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    """A rule on page 2 must still appear in the destructive preview."""
+    mock_pipe_config_client.get_field_conditions.return_value = {
+        "phase": {"fieldConditions": []}
+    }
+    page_one = _automation_page([{"id": f"a{i}", "name": f"R{i}"} for i in range(50)])
+    page_one["totalCount"] = 51
+    page_one["pageInfo"] = {"hasNextPage": True, "endCursor": "c50"}
+    page_two = _automation_page([{"id": "a50", "name": "Hit"}])
+    page_two["totalCount"] = 51
+    mock_pipe_config_client.get_automations.side_effect = [page_one, page_two]
+
+    async def _detail(automation_id):
+        if str(automation_id) == "a50":
+            return {
+                "id": "a50",
+                "name": "Hit",
+                "event_params": {"inPhaseId": "55"},
+            }
+        return {
+            "id": str(automation_id),
+            "name": "Other",
+            "event_params": {},
+        }
+
+    mock_pipe_config_client.get_automation.side_effect = _detail
+    mock_pipe_config_client.get_phase_cards_count.return_value = 0
+    mock_pipe_config_client.get_phase_fields.return_value = {"fields": []}
+
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "delete_phase",
+            {"phase_id": 55, "pipe_id": 1, "confirm": False},
+        )
+    payload = extract_payload(result)
+    automations = payload["dependents"]["automations"]
+    assert automations == [{"id": "a50", "name": "Hit"}]
+    assert "1 automation" in payload["dependents"]["hint"]
+    calls = mock_pipe_config_client.get_automations.await_args_list
+    assert len(calls) == 2
+    assert calls[0].kwargs["after"] is None
+    assert calls[1].kwargs["after"] == "c50"
+    assert calls[0].kwargs["first"] == 50
 
 
 @pytest.mark.anyio
