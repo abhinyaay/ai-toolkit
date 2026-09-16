@@ -887,6 +887,8 @@ def test_automation_listing_selects_trigger_and_condition(query):
         "name",
         "active",
         "action_id",
+        "actionEnabled",
+        "disabledReason",
         "event_id",
         "event_params",
         "condition",

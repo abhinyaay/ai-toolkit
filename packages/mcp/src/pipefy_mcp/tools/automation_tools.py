@@ -139,8 +139,9 @@ class AutomationTools:
         ) -> dict[str, Any]:
             """List one page of traditional automation rules, filtered by organization and/or pipe.
 
-            Each row includes ``event_id``, ``event_params``, and ``condition`` for
-            auditing triggers and filters without a detail call per rule. An empty
+            Each row includes ``event_id``, ``event_params``, ``condition``,
+            ``actionEnabled``, and ``disabledReason`` for auditing triggers, filters,
+            and whether the action is enabled, without a detail call per rule. An empty
             condition expression is the API placeholder, not an active filter.
             Use ``get_automation`` for full action payloads before changing a rule.
 

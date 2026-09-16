@@ -163,6 +163,8 @@ GET_AUTOMATIONS_BY_ORG_QUERY = gql(
                 name
                 active
                 action_id
+                actionEnabled
+                disabledReason
                 event_id
                 event_params {
                     fromPhaseId
@@ -207,6 +209,8 @@ GET_AUTOMATIONS_FOR_ORG_AND_REPO_QUERY = gql(
                 name
                 active
                 action_id
+                actionEnabled
+                disabledReason
                 event_id
                 event_params {
                     fromPhaseId
