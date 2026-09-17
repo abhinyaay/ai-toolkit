@@ -83,7 +83,7 @@ Logs, usage, and job exports for automations live in [skills/observability/pipef
 
 1. **Discover events** for the pipe: `get_automation_events pipe_id=67890`.
 2. **Discover actions** for the pipe: `get_automation_actions pipe_id=67890`. (Always discover first; never guess `trigger_id` / `action_id`.)
-3. **Confirm event×action compatibility** — the chosen `event_id` must appear in the action's `triggerEvents` (from `get_automation_actions`). If it does not, pick another pair; do not call `create_automation` yet. See [Event×action compatibility](#eventaction-compatibility).
+3. **Check event×action compatibility**: the pair is invalid when the chosen `event_id` appears in that action's `eventsBlacklist` (from `get_automation_actions`). Do not gate on `triggerEvents`, which lists something else. See [Event×action compatibility](#eventaction-compatibility).
 4. **Build the rule** with the discovered IDs and call `create_automation`.
 5. **Verify** by reading back with `get_automation`.
 
@@ -174,9 +174,26 @@ Use when the user wants an if/then rule to **stamp or copy values** onto the tri
 
 ### Event×action compatibility
 
-Before `create_automation`, confirm the chosen `event_id` is listed in that action's `triggerEvents` from `get_automation_actions` (cross-check with `get_automation_events` as needed). The API may still accept some incompatible pairs; those rules never fire.
+The constraint is a denylist. A pair is invalid when the `event_id` appears in that action's `eventsBlacklist` (`get_automation_actions`), which is the same thing as the `action_id` appearing in that event's `actionsBlacklist` (`get_automation_events`): the two lists agree on every entry of the catalog, so either one answers the question.
 
-**Known dead combo:** `field_updated` + `move_single_card` — create can succeed and the rule never executes. Do not use this pairing; pick a compatible event (for example `card_moved` when the action is a move) or a different action for field-update triggers.
+`triggerEvents` is not that list and must not be used as a gate. It reflects which pairings the builder offers first, and pairs outside it run: `field_updated` + `move_single_card` is absent from `triggerEvents` and does move the card. Three shapes in the catalog break a membership test. `send_a_task` and `send_email_template` return `triggerEvents: []` while creating rules that fire; `schedule_create_card` and `move_multiple_cards` list their own `eventsBlacklist` entries inside `triggerEvents`; and every action with a non-empty `triggerEvents` runs with events outside it.
+
+The API enforces the denylist itself, so a blacklisted pair never reaches the pipe. It is rejected on both `create_automation` and `update_automation` with an untranslated error whose only readable part is the key `event_action_blacklist`. Read that key as "this event cannot drive this action" and pick another pair; the write did not happen.
+
+### Catalog spelling is not input spelling
+
+`get_automation_events` reports `acceptedParameters` in snake_case; `AutomationEventParamsInput` defines all but one of them in camelCase. Sending the catalog spelling fails with `Field is not defined on AutomationEventParamsInput`. The full mapping:
+
+| Parameter | Catalog spelling | `event_params` key to send |
+|---|---|---|
+| Trigger fields | `trigger_field_ids` | `triggerFieldIds` |
+| SLA kind | `kind_of_sla` | `kindOfSla`, values capitalized: `Expired`, `Late`, `Overdue` |
+| Origin phase | `from_phase_id` | `fromPhaseId` |
+| Current phase | `in_phase_id` | `inPhaseId` |
+| Upstream rule | `trigger_automation_id` | `triggerAutomationId` |
+| Destination phase | `to_phase_id` | `to_phase_id`, the only key that stays snake_case |
+
+Recurring rules take their schedule outside `event_params`: `scheduler_frequency` (`hourly`, `daily`, `weekly`, `monthly`) plus `schedulerCron`, which is an object of five required strings (`minute`, `hour`, `dayOfMonth`, `month`, `dayOfWeek`), not a cron string.
 
 ### Applying a label has no automation action
 
@@ -248,8 +265,8 @@ Use this pattern for approvals, financial decisions, content publication, and an
 ### Automation did not fire / empty logs
 
 1. `get_automation` — re-read the rule and its `condition`.
-2. Re-check event×action: `event_id` must be in the action's `triggerEvents` (see [Event×action compatibility](#eventaction-compatibility)); known dead pairs never run even when create succeeded.
-3. Empty logs are not proof of a platform outage — the rule may be dormant, inactive, or incompatible.
+2. Rule out the trigger itself before the pairing: an incompatible pair is refused at write time (see [Event×action compatibility](#eventaction-compatibility)), so a stored rule is not dead for that reason. Confirm the event actually occurred on the card.
+3. Empty logs are not proof of a platform outage. The rule may be inactive (`active: false`), have its action turned off (`actionEnabled: false`, with `disabledReason`), or simply not have been triggered yet.
 4. Invalid `fieldId` in `field_map` may fail without updating the card (see below).
 5. Read the tool error payload and required-field / phase-transition hints **before** concluding "MCP down" or blaming the platform.
 
