@@ -19,7 +19,7 @@ For AI agents (conversational agents with behaviors), see [skills/ai-agents/pipe
 
 | Tool (MCP) | CLI | Purpose |
 |------------|-----|---------|
-| `get_automations` | `pipefy automation list` | List all automations for a pipe. |
+| `get_automations` | `pipefy automation list` | List rules with `event_id`, `event_params`, `condition`, `actionEnabled`, and `disabledReason` to audit triggers, filters, and whether the action is enabled. Empty condition expressions are API placeholders, not active filters. Pages hold at most 50 rules: check `pagination.total_count` / `has_more` (CLI `totalCount` / `pageInfo.hasNextPage`) and continue with `after` before concluding a rule or filter does not exist. |
 | `get_automation` | `pipefy automation get` | Single automation with full rule config — returns `event_params` and `action_params` (including `aiParams` for AI rules). |
 | `create_automation` | `pipefy automation create` | Create an if/then rule. `active` defaults to true. First-class typed `condition` (see [Conditions](#conditions--gate-a-rule-on-field-tests)); other fields via `extra_input`. |
 | `update_automation` | `pipefy automation update` | Patch a rule: first-class typed `condition` (see [Conditions](#conditions--gate-a-rule-on-field-tests)) and/or `extra_input`. |
@@ -40,7 +40,7 @@ Logs, usage, and job exports for automations live in [skills/observability/pipef
 
 | Tool (MCP) | CLI | Purpose |
 |------------|-----|---------|
-| `get_ai_automations` | `pipefy ai-automation list` | List AI automations for a pipe. |
+| `get_ai_automations` | `pipefy ai-automation list` | List `generate_with_ai` rules from one page of the pipe's mixed listing. `pagination` is of that mixed page (cap 50), not of the AI subset; continue with `after` while `has_more` is true before concluding an AI rule does not exist. |
 | `get_ai_automation` | `pipefy ai-automation get` | Full config including prompt, fields, condition. |
 | `create_ai_automation` | `pipefy ai-automation create` | Create a prompt-driven automation (requires AI enabled on the pipe). |
 | `update_ai_automation` | `pipefy ai-automation update` | Change name, `active`, prompt, `field_ids`, or `condition`. |
@@ -83,7 +83,7 @@ Logs, usage, and job exports for automations live in [skills/observability/pipef
 
 1. **Discover events** for the pipe: `get_automation_events pipe_id=67890`.
 2. **Discover actions** for the pipe: `get_automation_actions pipe_id=67890`. (Always discover first; never guess `trigger_id` / `action_id`.)
-3. **Confirm event×action compatibility** — the chosen `event_id` must appear in the action's `triggerEvents` (from `get_automation_actions`). If it does not, pick another pair; do not call `create_automation` yet. See [Event×action compatibility](#eventaction-compatibility).
+3. **Check event×action compatibility**: the pair is invalid when the chosen `event_id` appears in that action's `eventsBlacklist` (from `get_automation_actions`). Do not gate on `triggerEvents`, which lists something else. See [Event×action compatibility](#eventaction-compatibility).
 4. **Build the rule** with the discovered IDs and call `create_automation`.
 5. **Verify** by reading back with `get_automation`.
 
@@ -174,9 +174,28 @@ Use when the user wants an if/then rule to **stamp or copy values** onto the tri
 
 ### Event×action compatibility
 
-Before `create_automation`, confirm the chosen `event_id` is listed in that action's `triggerEvents` from `get_automation_actions` (cross-check with `get_automation_events` as needed). The API may still accept some incompatible pairs; those rules never fire.
+The constraint is a denylist. A pair is invalid when the `event_id` appears in that action's `eventsBlacklist` (`get_automation_actions`), which is the same thing as the `action_id` appearing in that event's `actionsBlacklist` (`get_automation_events`): the two lists agree on every entry of the catalog, so either one answers the question.
 
-**Known dead combo:** `field_updated` + `move_single_card` — create can succeed and the rule never executes. Do not use this pairing; pick a compatible event (for example `card_moved` when the action is a move) or a different action for field-update triggers.
+`triggerEvents` is not that list and must not be used as a gate. It reflects which pairings the builder offers first, so a membership test on it refuses pairs the denylist allows: `field_updated` + `move_single_card` is absent from `triggerEvents`, and that rule creates and moves the card. Three shapes in the catalog break such a test. `send_a_task` and `send_email_template` return `triggerEvents: []` while the denylist allows them on 7 and 9 of the 10 events; `schedule_create_card` and `move_multiple_cards` list their own `eventsBlacklist` entries inside `triggerEvents`; and every action with a non-empty `triggerEvents` is allowed by the denylist on events outside it.
+
+`create_automation` enforces the denylist. It rejects a blacklisted pair with an untranslated error whose readable part is the key `event_action_blacklist`, and writes nothing. Read that key as "this event cannot drive this action" and pick another pair.
+
+`update_automation` does not enforce it. Patching a stored rule's `event_id` to an event on its action's `eventsBlacklist` succeeds and persists: a rule created as `card_created` + `move_single_card` accepts an update to `scheduler` + `move_single_card`, which create refuses. So a blacklisted pair can exist on a rule that was updated into it, and checking the denylist before an update is the caller's job, not the API's.
+
+### Catalog spelling is not input spelling
+
+`get_automation_events` reports `acceptedParameters` in snake_case; `AutomationEventParamsInput` defines all but one of them in camelCase. Sending the catalog spelling fails with `Field is not defined on AutomationEventParamsInput`. The full mapping:
+
+| Parameter | Catalog spelling | `event_params` key to send |
+|---|---|---|
+| Trigger fields | `trigger_field_ids` | `triggerFieldIds` |
+| SLA kind | `kind_of_sla` | `kindOfSla`, values capitalized: `Expired`, `Late`, `Overdue` |
+| Origin phase | `from_phase_id` | `fromPhaseId` |
+| Current phase | `in_phase_id` | `inPhaseId` |
+| Upstream rule | `trigger_automation_id` | `triggerAutomationId` |
+| Destination phase | `to_phase_id` | `to_phase_id`, the only key that stays snake_case |
+
+Recurring rules take their schedule outside `event_params`: `scheduler_frequency` (`hourly`, `daily`, `weekly`, `monthly`) plus `schedulerCron`, which is an object of five required strings (`minute`, `hour`, `dayOfMonth`, `month`, `dayOfWeek`), not a cron string.
 
 ### Applying a label has no automation action
 
@@ -248,8 +267,8 @@ Use this pattern for approvals, financial decisions, content publication, and an
 ### Automation did not fire / empty logs
 
 1. `get_automation` — re-read the rule and its `condition`.
-2. Re-check event×action: `event_id` must be in the action's `triggerEvents` (see [Event×action compatibility](#eventaction-compatibility)); known dead pairs never run even when create succeeded.
-3. Empty logs are not proof of a platform outage — the rule may be dormant, inactive, or incompatible.
+2. Check the pairing against the denylist (see [Event×action compatibility](#eventaction-compatibility)). Create refuses a blacklisted pair, but update does not, so a rule that was patched after creation can hold one. Then confirm the event actually occurred on the card.
+3. Empty logs are not proof of a platform outage. The rule may be inactive (`active: false`), have its action turned off (`actionEnabled: false`, with `disabledReason`), or simply not have been triggered yet.
 4. Invalid `fieldId` in `field_map` may fail without updating the card (see below).
 5. Read the tool error payload and required-field / phase-transition hints **before** concluding "MCP down" or blaming the platform.
 

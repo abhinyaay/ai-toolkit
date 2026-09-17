@@ -103,7 +103,7 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `get_ai_agent_logs` | `pipefy agent logs list` | shipped | AI Agents domain. |
 | `get_ai_agents` | `pipefy agent list` | shipped | AI Agents domain. |
 | `get_ai_automation` | `pipefy ai-automation get` | shipped | AI Automations domain. |
-| `get_ai_automations` | `pipefy ai-automation list` | shipped | AI Automations domain. |
+| `get_ai_automations` | `pipefy ai-automation list` | shipped | AI Automations domain (`--pipe`; optional `--organization`; `--first` 1 to 50, `--after`). `pagination` is of the mixed `get_automations` page, then filtered to `generate_with_ai`. |
 | `get_ai_credit_usage` | `pipefy usage credits` | shipped | (`--organization`, `--period`). |
 | `get_ai_knowledge_base_data_lookup` | `pipefy kb data-lookup get` | shipped | Knowledge bases; pipe-scoped data lookup (`--id`, `--pipe-uuid`); the payload never includes `conditions` (the API does not expose them on reads). |
 | `get_ai_knowledge_base_document` | `pipefy kb document get` | shipped | Knowledge bases; pipe-scoped document metadata (`--id`, `--pipe-uuid`); `content` is the stored document URL, not the extracted text. |
@@ -118,7 +118,7 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `get_automation_jobs_export_csv` | `pipefy export automation-jobs-csv` (also `pipefy automation export csv`) | shipped | (export id argument). |
 | `get_automation_logs` | `pipefy automation logs --automation` | shipped | (mutually exclusive with `--repo`). |
 | `get_automation_logs_by_repo` | `pipefy automation logs --repo` | shipped | — |
-| `get_automations` | `pipefy automation list` | shipped | (optional `--organization` / `--pipe`). |
+| `get_automations` | `pipefy automation list` | shipped | (optional `--organization` / `--pipe`; `--first` 1 to 50, `--after` cursor). `--json` prints the whole page (`nodes`, `totalCount`, `pageInfo`); without `--json`, a table of each row's scalar columns plus `totalCount` / `hasNextPage`, with `event_params` and `condition` left to `--json`. |
 | `get_automations_usage` | `pipefy usage automations` (also `pipefy automation usage`) | shipped | (`--organization`, `--from`, `--to` ISO range). |
 | `get_available_ai_models` | `pipefy ai-provider models` | shipped | LLM provider discovery; vendor model list (`--provider-name`). |
 | `get_card` | `pipefy card get` | shipped | Supports `--include-fields`. |

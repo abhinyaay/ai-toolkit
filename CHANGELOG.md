@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Automation listings**: SDK, MCP, and CLI now return trigger IDs, event parameters, conditions, `actionEnabled`, and `disabledReason` for organization and pipe listings, avoiding a detail call per rule to audit its filters and whether the action is enabled. Listings are paged: the API caps a page at 50 rules, so `get_automations` / `pipefy automation list` accept `first` / `after` and report `totalCount` and `hasNextPage` instead of silently returning the first 50. `get_ai_automations` / `pipefy ai-automation list` expose the same page block for the mixed connection they filter. Human `pipefy automation list` prints a table of each row's scalar columns plus the page counts, leaving the nested `event_params` and `condition` to `--json`. Phase-delete preview follows every page of rules, reads their details under a concurrency bound instead of one simultaneous call per rule, and says when the dependents list is a lower bound because a page or a detail read failed. An empty pipe no longer fails `get_automation_logs_by_repo`. The last page of an audit names itself so `11 of 61` is not read as a shortfall. (#612)
+
+- **Automations skill and docs, event and action compatibility**: the skill named `field_updated` + `move_single_card` a dead pairing and told agents to gate a rule on the action's `triggerEvents`. The pairing fires, and `triggerEvents` is not a compatibility allowlist: actions return it empty, list their own `eventsBlacklist` entries inside it, and run with events outside it. Both surfaces now state the rule the catalog supports, a pair is invalid when the event is in the action's `eventsBlacklist`, name the `event_action_blacklist` rejection `create_automation` returns for one, and record that `update_automation` does not enforce the denylist, so a rule can be patched into a blacklisted pair. The skill also carries the full catalog-to-input spelling map for `event_params` (`trigger_field_ids` is `triggerFieldIds`, and `to_phase_id` is the only key that stays snake_case) and the `scheduler_frequency` plus five-field `schedulerCron` shape recurring rules need. (#689)
+
+### Changed
+
+- **SDK `get_automations`**: returns the connection page (`nodes`, `totalCount`, `pageInfo`) instead of a bare list, so callers can detect a truncated listing.
+
 ## [0.5.2-beta.1] - 2026-09-11
 
 ### Changed

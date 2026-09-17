@@ -44,8 +44,8 @@ from pipefy_sdk.services.automation_graphql_types import (
     AutomationActionRow,
     AutomationEventAttributeRow,
     AutomationEventRow,
+    AutomationListPage,
     AutomationRuleRecord,
-    AutomationRuleSummary,
     CreateAutomationMutationResult,
     DeleteAutomationServiceResult,
     SimulateAutomationServiceResult,
@@ -902,15 +902,32 @@ class PipefyClient:
         """Get a traditional automation rule by ID (trigger, actions, status)."""
         return await self._automation_service.get_automation(automation_id)
 
+    async def get_pipe_organization_id(self, pipe_id: str) -> str | None:
+        """Resolve the organization that owns ``pipe_id``, or None when the API omits it.
+
+        Paging the same pipe's automations resolves this once and passes it on every
+        page, rather than letting ``get_automations`` look it up per call.
+        """
+        return await self._automation_service.get_pipe_organization_id(pipe_id)
+
     async def get_automations(
         self,
         organization_id: str | None = None,
         pipe_id: str | None = None,
-    ) -> list[AutomationRuleSummary]:
-        """List traditional automation rules for an organization and/or pipe."""
+        *,
+        first: int | None = None,
+        after: str | None = None,
+    ) -> AutomationListPage:
+        """List one page of traditional automation rules for an organization and/or pipe.
+
+        The API caps a page at 50 rules; read ``pageInfo.hasNextPage`` and ``totalCount``
+        before treating the page as the complete set.
+        """
         return await self._automation_service.get_automations(
             organization_id=organization_id,
             pipe_id=pipe_id,
+            first=first,
+            after=after,
         )
 
     async def get_automation_actions(self, pipe_id: str) -> list[AutomationActionRow]:
@@ -2348,7 +2365,7 @@ class PipefyClient:
             search_term: Free-text search.
         """
         rules = await self.get_automations(pipe_id=str(repo_id))
-        if not rules:
+        if not rules["nodes"]:
             return {
                 "automationLogsByRepo": {
                     "nodes": [],

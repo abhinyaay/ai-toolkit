@@ -365,11 +365,19 @@ Usage: pipefy ai-automation list [OPTIONS]
  List AI automations for a pipe (``get_ai_automations`` / filtered
  ``get_automations``).
 
+ One page of the pipe's rules (cap 50) is fetched, then filtered to
+ ``generate_with_ai``. Pagination describes that mixed page, not the AI subset.
+
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ *  --pipe                        TEXT  Pipe id. [required]                   │
-│    --organization,--org          TEXT  Optional organization id.             │
+│ *  --pipe                        TEXT     Pipe id. [required]                │
+│    --organization,--org          TEXT     Optional organization id.          │
+│    --first                       INTEGER  Page size of the mixed listing, 1  │
+│                                           to 50 (the API cap). Defaults to   │
+│                                           the cap.                           │
+│    --after                       TEXT     pageInfo.endCursor from the        │
+│                                           previous page.                     │
 │    --json                -j                                                  │
-│    --help                              Show this message and exit.           │
+│    --help                                 Show this message and exit.        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ### HELP ai-automation/update
@@ -865,7 +873,7 @@ Usage: pipefy automation [OPTIONS] COMMAND [ARGS]...
 │ --help          Show this message and exit.                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ list               List automation rules (``get_automations``).              │
+│ list               List one page of automation rules (``get_automations``).  │
 │ get                Load one automation (``get_automation``).                 │
 │ create             Create an automation rule (``create_automation``).        │
 │ update             Update an automation (``update_automation``).             │
@@ -1085,13 +1093,23 @@ Usage: pipefy automation get [OPTIONS] AUTOMATION_ID
 ### HELP automation/list
 Usage: pipefy automation list [OPTIONS]
 
- List automation rules (``get_automations``).
+ List one page of automation rules (``get_automations``).
+
+ The API caps a page at 50 rules. ``--json`` prints the whole page (``nodes``,
+ ``totalCount``, and ``pageInfo``). Without ``--json``, the scalar columns of
+ each row print as a table with ``totalCount`` and ``hasNextPage`` beside it;
+ ``event_params`` and ``condition`` are nested and read from ``--json``.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --organization,--org          TEXT  Optional organization id filter.         │
-│ --pipe                        TEXT  Optional pipe id filter.                 │
-│ --json                -j            Print machine-readable JSON to stdout.   │
-│ --help                              Show this message and exit.              │
+│ --organization,--org          TEXT     Optional organization id filter.      │
+│ --pipe                        TEXT     Optional pipe id filter.              │
+│ --first                       INTEGER  Page size, 1 to 50 (the API cap).     │
+│                                        Defaults to the cap.                  │
+│ --after                       TEXT     pageInfo.endCursor from the previous  │
+│                                        page.                                 │
+│ --json                -j               Print machine-readable JSON to        │
+│                                        stdout.                               │
+│ --help                                 Show this message and exit.           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ### HELP automation/logs
