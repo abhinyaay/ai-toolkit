@@ -1095,9 +1095,10 @@ Usage: pipefy automation list [OPTIONS]
 
  List one page of automation rules (``get_automations``).
 
- The API caps a page at 50 rules. ``--json`` prints the page (``nodes``,
- ``totalCount``, and ``pageInfo``). Without ``--json``, rows print as a table
- with ``totalCount`` and ``hasNextPage`` beside it.
+ The API caps a page at 50 rules. ``--json`` prints the whole page (``nodes``,
+ ``totalCount``, and ``pageInfo``). Without ``--json``, the scalar columns of
+ each row print as a table with ``totalCount`` and ``hasNextPage`` beside it;
+ ``event_params`` and ``condition`` are nested and read from ``--json``.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --organization,--org          TEXT     Optional organization id filter.      │

@@ -1086,6 +1086,48 @@ def test_automation_list_human_prints_table_and_page_counts(
     assert '"nodes"' not in r.stdout
 
 
+def test_automation_list_human_table_omits_nested_columns(
+    runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    """Nested structures would blow the table up; the human path keeps scalars."""
+    oauth_env("automation-list-columns")
+    page = {
+        "nodes": [
+            {
+                "id": "a1",
+                "name": "Move on approval",
+                "active": True,
+                "action_id": "move_single_card",
+                "actionEnabled": True,
+                "disabledReason": None,
+                "event_id": "card_moved",
+                "event_params": {"inPhaseId": "NESTEDPHASEMARKER"},
+                "condition": {"id": "NESTEDCONDMARKER", "expressions": []},
+            }
+        ],
+        "totalCount": 1,
+        "pageInfo": {"hasNextPage": False, "endCursor": None},
+    }
+    mock_client = MagicMock()
+    mock_client.get_automations = AsyncMock(return_value=page)
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        r = runner.invoke(
+            app, ["automation", "list", "--org", "7"], env={"COLUMNS": "220"}
+        )
+    assert r.exit_code == 0, r.stdout + (r.stderr or "")
+    for scalar in ("id", "name", "active", "action_id", "actionEnabled", "event_id"):
+        assert scalar in r.stdout
+    assert "card_moved" in r.stdout
+    assert "move_single_card" in r.stdout
+    assert "event_params" not in r.stdout
+    assert "condition" not in r.stdout
+    assert "NESTEDPHASEMARKER" not in r.stdout
+    assert "NESTEDCONDMARKER" not in r.stdout
+
+
 def test_ai_automation_list_json_includes_pagination(
     runner: CliRunner, clean_pipefy_env, saved_cwd, oauth_env
 ):

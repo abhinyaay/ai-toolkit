@@ -26,10 +26,24 @@ from pipefy_cli.output import render_json, render_rich
 automation_app = typer.Typer(
     help="Traditional automations and related exports.", no_args_is_help=True
 )
+
 export_app = typer.Typer(help="Automation jobs export (async).", no_args_is_help=True)
 send_task_app = typer.Typer(help="Send-a-task automation helper.", no_args_is_help=True)
 events_app = typer.Typer(help="Automation trigger catalog.", no_args_is_help=True)
 actions_app = typer.Typer(help="Automation action catalog.", no_args_is_help=True)
+
+#: Scalar columns of a listing row, in the order the table prints them. The row also
+#: carries ``event_params`` and ``condition``, which are nested structures a terminal
+#: cell cannot show; ``--json`` is where an audit reads those.
+_LIST_TABLE_COLUMNS = (
+    "id",
+    "name",
+    "active",
+    "action_id",
+    "actionEnabled",
+    "disabledReason",
+    "event_id",
+)
 
 
 @automation_app.command("list")
@@ -62,9 +76,10 @@ def automation_list(
 ) -> None:
     """List one page of automation rules (``get_automations``).
 
-    The API caps a page at 50 rules. ``--json`` prints the page (``nodes``,
-    ``totalCount``, and ``pageInfo``). Without ``--json``, rows print as a table
-    with ``totalCount`` and ``hasNextPage`` beside it.
+    The API caps a page at 50 rules. ``--json`` prints the whole page (``nodes``,
+    ``totalCount``, and ``pageInfo``). Without ``--json``, the scalar columns of
+    each row print as a table with ``totalCount`` and ``hasNextPage`` beside it;
+    ``event_params`` and ``condition`` are nested and read from ``--json``.
     """
 
     first = validate_cards_page_size(first, max_size=AUTOMATIONS_LIST_MAX_PAGE_SIZE)
@@ -82,7 +97,9 @@ def automation_list(
     if json_out:
         render_json(page)
         return
-    render_rich(page["nodes"])
+    render_rich(
+        [{k: row[k] for k in _LIST_TABLE_COLUMNS if k in row} for row in page["nodes"]]
+    )
     info = page["pageInfo"]
     typer.echo(
         f"totalCount={page['totalCount']} hasNextPage={info.get('hasNextPage')} "
