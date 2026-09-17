@@ -902,6 +902,14 @@ class PipefyClient:
         """Get a traditional automation rule by ID (trigger, actions, status)."""
         return await self._automation_service.get_automation(automation_id)
 
+    async def get_pipe_organization_id(self, pipe_id: str) -> str | None:
+        """Resolve the organization that owns ``pipe_id``, or None when the API omits it.
+
+        Paging the same pipe's automations resolves this once and passes it on every
+        page, rather than letting ``get_automations`` look it up per call.
+        """
+        return await self._automation_service.get_pipe_organization_id(pipe_id)
+
     async def get_automations(
         self,
         organization_id: str | None = None,

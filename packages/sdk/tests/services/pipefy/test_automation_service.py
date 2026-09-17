@@ -822,6 +822,34 @@ def _empty_automation_list_page():
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_get_pipe_organization_id_reads_the_pipe_organization():
+    from pipefy_sdk.services.automation_service import AutomationService
+
+    executor = AsyncMock()
+    executor.execute_query = AsyncMock(return_value={"pipe": {"organizationId": 4242}})
+    service = AutomationService.__new__(AutomationService)
+    service._executor = executor
+
+    assert await service.get_pipe_organization_id("77") == "4242"
+    executor.execute_query.assert_awaited_once()
+    assert executor.execute_query.await_args.args[1] == {"id": "77"}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_pipe_organization_id_returns_none_when_absent():
+    from pipefy_sdk.services.automation_service import AutomationService
+
+    executor = AsyncMock()
+    executor.execute_query = AsyncMock(return_value={"pipe": {}})
+    service = AutomationService.__new__(AutomationService)
+    service._executor = executor
+
+    assert await service.get_pipe_organization_id("77") is None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_get_automation_logs_by_repo_skips_graphql_when_pipe_has_no_automations():
     """Facade short-circuits before automationLogsByRepo when the page has no rows."""
     from pipefy_sdk.client import PipefyClient

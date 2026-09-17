@@ -14,6 +14,7 @@ from pipefy_sdk import PipefyClient, PipefyGraphQLError
 from pipefy_mcp.core.tool_error_envelope import tool_error, tool_error_message
 from pipefy_mcp.tools.field_condition_tools import FieldConditionTools
 from pipefy_mcp.tools.pipe_config_tool_helpers import (
+    AUTOMATION_DETAIL_FETCH_CONCURRENCY,
     DeletePipeErrorPayload,
     build_field_condition_delete_payload,
     build_field_condition_success_payload,
@@ -114,6 +115,7 @@ def mock_pipe_config_client():
     client.get_field_condition = AsyncMock()
     client.get_automations = AsyncMock(return_value=_automation_page([]))
     client.get_automation = AsyncMock()
+    client.get_pipe_organization_id = AsyncMock(return_value="org-1")
     return client
 
 
@@ -584,9 +586,146 @@ async def test_delete_phase_preview_pages_automations_past_the_api_cap(
 
 
 @pytest.mark.anyio
-async def test_delete_phase_preview_partial_failure_automations_raises(
+async def test_delete_phase_preview_bounds_detail_fan_out(
     pipe_config_session, mock_pipe_config_client, extract_payload
 ):
+    """One detail call per rule, but never more than the bound at once."""
+    rule_count = 40
+    mock_pipe_config_client.get_field_conditions.return_value = {
+        "phase": {"fieldConditions": []}
+    }
+    mock_pipe_config_client.get_automations.return_value = _automation_page(
+        [{"id": f"a{i}", "name": f"R{i}"} for i in range(rule_count)]
+    )
+    mock_pipe_config_client.get_phase_cards_count.return_value = 0
+    mock_pipe_config_client.get_phase_fields.return_value = {"fields": []}
+
+    in_flight = 0
+    peak = 0
+
+    async def _detail(automation_id):
+        nonlocal in_flight, peak
+        in_flight += 1
+        peak = max(peak, in_flight)
+        try:
+            await asyncio.sleep(0)
+            return {"id": str(automation_id), "name": "Other", "event_params": {}}
+        finally:
+            in_flight -= 1
+
+    mock_pipe_config_client.get_automation.side_effect = _detail
+
+    async with pipe_config_session as session:
+        await session.call_tool(
+            "delete_phase",
+            {"phase_id": 55, "pipe_id": 1, "confirm": False},
+        )
+    assert mock_pipe_config_client.get_automation.await_count == rule_count
+    assert peak <= AUTOMATION_DETAIL_FETCH_CONCURRENCY
+    assert peak > 1
+
+
+@pytest.mark.anyio
+async def test_delete_phase_preview_marks_automations_partial_when_a_detail_fails(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    """A dropped detail read makes the count a floor, and the prompt has to say so."""
+    mock_pipe_config_client.get_field_conditions.return_value = {
+        "phase": {"fieldConditions": []}
+    }
+    mock_pipe_config_client.get_automations.return_value = _automation_page(
+        [{"id": "a1", "name": "Hit"}, {"id": "a2", "name": "Unreadable"}]
+    )
+    mock_pipe_config_client.get_phase_cards_count.return_value = 0
+    mock_pipe_config_client.get_phase_fields.return_value = {"fields": []}
+
+    async def _detail(automation_id):
+        if str(automation_id) == "a2":
+            raise PipefyGraphQLError([{"message": "throttled"}])
+        return {"id": "a1", "name": "Hit", "event_params": {"inPhaseId": "55"}}
+
+    mock_pipe_config_client.get_automation.side_effect = _detail
+
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "delete_phase",
+            {"phase_id": 55, "pipe_id": 1, "confirm": False},
+        )
+    deps = extract_payload(result)["dependents"]
+    assert deps["automations"] == [{"id": "a1", "name": "Hit"}]
+    assert deps["automations_partial"] is True
+    assert "at least 1 automation" in deps["hint"]
+    assert "lower bound" in deps["hint"]
+
+
+@pytest.mark.anyio
+async def test_delete_phase_preview_resolves_the_organization_once_per_preview(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    """Passing the org on every page keeps get_automations from looking it up again."""
+    mock_pipe_config_client.get_field_conditions.return_value = {
+        "phase": {"fieldConditions": []}
+    }
+    page_one = _automation_page([{"id": f"a{i}", "name": f"R{i}"} for i in range(50)])
+    page_one["pageInfo"] = {"hasNextPage": True, "endCursor": "c50"}
+    page_two = _automation_page([{"id": "a50", "name": "Last"}])
+    mock_pipe_config_client.get_automations.side_effect = [page_one, page_two]
+    mock_pipe_config_client.get_automation.side_effect = lambda automation_id: {
+        "id": str(automation_id),
+        "event_params": {},
+    }
+    mock_pipe_config_client.get_phase_cards_count.return_value = 0
+    mock_pipe_config_client.get_phase_fields.return_value = {"fields": []}
+
+    async with pipe_config_session as session:
+        await session.call_tool(
+            "delete_phase",
+            {"phase_id": 55, "pipe_id": 1, "confirm": False},
+        )
+    assert mock_pipe_config_client.get_pipe_organization_id.await_count == 1
+    calls = mock_pipe_config_client.get_automations.await_args_list
+    assert len(calls) == 2
+    assert [c.kwargs["organization_id"] for c in calls] == ["org-1", "org-1"]
+
+
+@pytest.mark.anyio
+async def test_delete_phase_preview_keeps_earlier_pages_when_a_later_page_fails(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    """Page 2 failing must not throw away the rules page 1 already returned."""
+    mock_pipe_config_client.get_field_conditions.return_value = {
+        "phase": {"fieldConditions": []}
+    }
+    page_one = _automation_page([{"id": "a1", "name": "Hit"}])
+    page_one["pageInfo"] = {"hasNextPage": True, "endCursor": "c1"}
+    mock_pipe_config_client.get_automations.side_effect = [
+        page_one,
+        PipefyGraphQLError([{"message": "throttled"}]),
+    ]
+    mock_pipe_config_client.get_automation.side_effect = lambda automation_id: {
+        "id": "a1",
+        "name": "Hit",
+        "event_params": {"inPhaseId": "55"},
+    }
+    mock_pipe_config_client.get_phase_cards_count.return_value = 0
+    mock_pipe_config_client.get_phase_fields.return_value = {"fields": []}
+
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "delete_phase",
+            {"phase_id": 55, "pipe_id": 1, "confirm": False},
+        )
+    deps = extract_payload(result)["dependents"]
+    assert deps["automations"] == [{"id": "a1", "name": "Hit"}]
+    assert deps["automations_partial"] is True
+    assert "at least 1 automation" in deps["hint"]
+
+
+@pytest.mark.anyio
+async def test_delete_phase_preview_marks_automations_partial_when_listing_fails(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    """A failed rule listing must be stated, not rendered as "no automations"."""
     mock_pipe_config_client.get_field_conditions.return_value = {
         "phase": {
             "fieldConditions": [
@@ -610,12 +749,13 @@ async def test_delete_phase_preview_partial_failure_automations_raises(
     deps = payload.get("dependents")
     assert deps is not None
     assert "automations" not in deps
+    assert deps["automations_partial"] is True
     assert len(deps["field_conditions"]) == 1
     assert deps["cards_count"] == 1
     assert deps["phase_fields_count"] == 1
     hint = deps.get("hint", "")
     assert "1 card(s)" in hint
-    assert "automation" not in hint
+    assert "could not be read" in hint
 
 
 @pytest.mark.anyio
@@ -632,7 +772,13 @@ async def test_delete_phase_preview_all_sublookups_fail(
             "delete_phase",
             {"phase_id": 55, "pipe_id": 1, "confirm": False},
         )
-    assert "dependents" not in extract_payload(result)
+    deps = extract_payload(result).get("dependents")
+    assert deps is not None
+    assert deps == {
+        "automations_partial": True,
+        "hint": deps["hint"],
+    }
+    assert "could not be read" in deps["hint"]
 
 
 @pytest.mark.anyio

@@ -213,6 +213,21 @@ class AutomationService:
             return None
         return cast(AutomationRuleRecord, row)
 
+    async def get_pipe_organization_id(self, pipe_id: str) -> str | None:
+        """Resolve the organization that owns ``pipe_id``, or None when the API omits it.
+
+        ``automations`` requires an organization id. A caller that pages the same
+        pipe resolves it once with this and passes it on every page, instead of
+        paying the lookup per call.
+        """
+        payload = await self._executor.execute_query(
+            GET_PIPE_ORGANIZATION_ID_QUERY,
+            {"id": str(pipe_id)},
+        )
+        pipe = payload.get("pipe") or {}
+        org_id = pipe.get("organizationId")
+        return str(org_id) if org_id is not None else None
+
     async def get_automations(
         self,
         organization_id: str | None = None,
@@ -239,13 +254,7 @@ class AutomationService:
 
         org_id: str | None = organization_id
         if org_id is None and pipe_id is not None:
-            org_row = await self._executor.execute_query(
-                GET_PIPE_ORGANIZATION_ID_QUERY,
-                {"id": str(pipe_id)},
-            )
-            pipe = org_row.get("pipe") or {}
-            oid = pipe.get("organizationId")
-            org_id = str(oid) if oid is not None else None
+            org_id = await self.get_pipe_organization_id(pipe_id)
             if org_id is None:
                 return _empty_automation_page()
 
