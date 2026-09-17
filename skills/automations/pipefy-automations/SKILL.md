@@ -176,9 +176,11 @@ Use when the user wants an if/then rule to **stamp or copy values** onto the tri
 
 The constraint is a denylist. A pair is invalid when the `event_id` appears in that action's `eventsBlacklist` (`get_automation_actions`), which is the same thing as the `action_id` appearing in that event's `actionsBlacklist` (`get_automation_events`): the two lists agree on every entry of the catalog, so either one answers the question.
 
-`triggerEvents` is not that list and must not be used as a gate. It reflects which pairings the builder offers first, and pairs outside it run: `field_updated` + `move_single_card` is absent from `triggerEvents` and does move the card. Three shapes in the catalog break a membership test. `send_a_task` and `send_email_template` return `triggerEvents: []` while creating rules that fire; `schedule_create_card` and `move_multiple_cards` list their own `eventsBlacklist` entries inside `triggerEvents`; and every action with a non-empty `triggerEvents` runs with events outside it.
+`triggerEvents` is not that list and must not be used as a gate. It reflects which pairings the builder offers first, so a membership test on it refuses pairs the denylist allows: `field_updated` + `move_single_card` is absent from `triggerEvents`, and that rule creates and moves the card. Three shapes in the catalog break such a test. `send_a_task` and `send_email_template` return `triggerEvents: []` while the denylist allows them on 7 and 9 of the 10 events; `schedule_create_card` and `move_multiple_cards` list their own `eventsBlacklist` entries inside `triggerEvents`; and every action with a non-empty `triggerEvents` is allowed by the denylist on events outside it.
 
-The API enforces the denylist itself, so a blacklisted pair never reaches the pipe. It is rejected on both `create_automation` and `update_automation` with an untranslated error whose only readable part is the key `event_action_blacklist`. Read that key as "this event cannot drive this action" and pick another pair; the write did not happen.
+`create_automation` enforces the denylist. It rejects a blacklisted pair with an untranslated error whose readable part is the key `event_action_blacklist`, and writes nothing. Read that key as "this event cannot drive this action" and pick another pair.
+
+`update_automation` does not enforce it. Patching a stored rule's `event_id` to an event on its action's `eventsBlacklist` succeeds and persists: a rule created as `card_created` + `move_single_card` accepts an update to `scheduler` + `move_single_card`, which create refuses. So a blacklisted pair can exist on a rule that was updated into it, and checking the denylist before an update is the caller's job, not the API's.
 
 ### Catalog spelling is not input spelling
 
@@ -265,7 +267,7 @@ Use this pattern for approvals, financial decisions, content publication, and an
 ### Automation did not fire / empty logs
 
 1. `get_automation` — re-read the rule and its `condition`.
-2. Rule out the trigger itself before the pairing: an incompatible pair is refused at write time (see [Event×action compatibility](#eventaction-compatibility)), so a stored rule is not dead for that reason. Confirm the event actually occurred on the card.
+2. Check the pairing against the denylist (see [Event×action compatibility](#eventaction-compatibility)). Create refuses a blacklisted pair, but update does not, so a rule that was patched after creation can hold one. Then confirm the event actually occurred on the card.
 3. Empty logs are not proof of a platform outage. The rule may be inactive (`active: false`), have its action turned off (`actionEnabled: false`, with `disabledReason`), or simply not have been triggered yet.
 4. Invalid `fieldId` in `field_map` may fail without updating the card (see below).
 5. Read the tool error payload and required-field / phase-transition hints **before** concluding "MCP down" or blaming the platform.
