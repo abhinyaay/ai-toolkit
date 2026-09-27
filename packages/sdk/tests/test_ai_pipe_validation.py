@@ -142,6 +142,44 @@ async def test_fetch_pipe_validation_context_excludes_start_form_phase() -> None
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+async def test_fetch_pipe_validation_context_reads_get_pipe_relations_payload() -> None:
+    # ``get_pipe_relations`` returns the raw GetPipeRelations result: relations live
+    # under ``pipe.childrenRelations`` / ``pipe.parentsRelations``.
+    client = AsyncMock()
+    client.get_pipe = AsyncMock(
+        return_value={"pipe": {"phases": [], "start_form_fields": []}}
+    )
+    client.get_pipe_relations = AsyncMock(
+        return_value={
+            "pipe": {
+                "id": EXAMPLE_PIPE_ID,
+                "parentsRelations": [
+                    {
+                        "id": "rel-1",
+                        "parent": {"id": "parent-20", "name": "Parent"},
+                        "child": {"id": EXAMPLE_PIPE_ID, "name": "Source"},
+                    }
+                ],
+                "childrenRelations": [
+                    {
+                        "id": "rel-2",
+                        "parent": {"id": EXAMPLE_PIPE_ID, "name": "Source"},
+                        "child": {"id": "child-10", "name": "Child"},
+                    }
+                ],
+            }
+        }
+    )
+
+    _, _, related_pipe_ids, _ = await fetch_pipe_validation_context(
+        client, EXAMPLE_PIPE_ID, timeout=5
+    )
+
+    assert related_pipe_ids == {"child-10", "parent-20"}
+
+
+@pytest.mark.unit
 def test_validate_behaviors_accepts_internal_id_when_in_pipe_field_set() -> None:
     behavior = {
         "name": "Update briefing",
