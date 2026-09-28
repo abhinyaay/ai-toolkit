@@ -9,6 +9,7 @@ from pipefy_sdk.phase_inventory import (
     get_phase_not_found_message,
     is_get_phase_not_found_error,
 )
+from pipefy_sdk.transition_hints import TRANSITION_RULES_HINT
 
 from pipefy_mcp.core.tool_error_envelope import (
     is_unified_envelope_enabled,
@@ -574,6 +575,12 @@ class PipeConfigTools:
         ) -> dict[str, Any]:
             """Create a phase in a pipe.
 
+            Creating a phase does not configure its Phase Connections /
+            ``allowed_phases`` (UI-only, not editable via API), so a new phase
+            has no move edges until they are set in the Pipefy UI. Call
+            ``get_phase_allowed_move_targets`` on the source phase before a move.
+            The success payload repeats this as a ``connection_hint`` key.
+
             Args:
                 pipe_id: Pipe that will contain the phase.
                 name: Phase name.
@@ -582,9 +589,7 @@ class PipeConfigTools:
                     returned by ``get_pipe``. Omit to append after existing
                     phases. Prefer ``1`` or higher for normal layout; ``0``
                     creates a phase that does not appear in ``get_pipe``'s
-                    ``phases`` list. Index only sets order - it does not
-                    configure Phase Connections / ``allowed_phases`` (UI-only);
-                    call ``get_phase_allowed_move_targets`` before moves.
+                    ``phases`` list. Index only sets order.
                 description: Optional phase description.
                 debug: When True, append GraphQL codes and correlation_id to errors.
             """
@@ -616,6 +621,7 @@ class PipeConfigTools:
             return build_pipe_mutation_success_payload(
                 label="Phase created.",
                 data=raw,
+                connection_hint=TRANSITION_RULES_HINT,
             )
 
         @mcp.tool(
@@ -641,6 +647,11 @@ class PipeConfigTools:
             Pipefy requires the phase name on update. Omit `name` to keep the current
             name (resolved via get_phase_fields). Values identical to the current state
             are accepted but result in a no-op API call.
+
+            Updating a phase does not configure its Phase Connections /
+            ``allowed_phases`` (UI-only, not editable via API). Call
+            ``get_phase_allowed_move_targets`` on the source phase before a move.
+            The success payload repeats this as a ``connection_hint`` key.
 
             Args:
                 phase_id: Phase ID to update.
@@ -717,6 +728,7 @@ class PipeConfigTools:
             return build_pipe_mutation_success_payload(
                 label="Phase updated.",
                 data=raw,
+                connection_hint=TRANSITION_RULES_HINT,
             )
 
         @mcp.tool(
