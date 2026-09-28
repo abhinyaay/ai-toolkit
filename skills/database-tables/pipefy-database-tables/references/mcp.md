@@ -9,11 +9,11 @@
 Always call without `confirm=true` first, surface the preview (including `confirmation_token`) to the user, then call again with `confirm=true` and that token after explicit approval.
 
 ```text
-get_tables organization_id=123
+search_tables table_name="Customers"
 ```
 
 ```text
-find_records table_id=456 filter='{"column_id":"email","search_value":"user@example.com"}'
+find_records table_id=456 field_id="email" field_value="user@example.com"
 ```
 
 ```text
@@ -21,11 +21,9 @@ set_table_record_field_value record_id=789 field_id="status" value="Active"
 ```
 
 ```text
-update_table_record record_id=789 node_fields='[{"field_id":"status","field_value":"Active"}]'
+update_table_record record_id=789 fields={"title":"Updated title"}
 ```
 
 Attachment uploads: exactly one source, `file_path` (local profile only) or `file_url` (downloaded, SSRF-guarded; any profile — required on the hosted server). See `pipefy-attachments`.
 
 Never delete in a single call.
-
-This workflow exposes 17 MCP tools.

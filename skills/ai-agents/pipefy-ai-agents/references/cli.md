@@ -43,7 +43,7 @@ Destructive deletes require `--yes`; there is no confirmation token.
 
 ## Providers and knowledge bases
 
-`pipefy ai-provider list`, `pipefy ai-provider create`, `update`, `delete`, `set-active-status`, `default set`, and `default reset` manage providers. Create/update use a local JSON configuration file, never inline credentials. Its `provider` key selects the vendor; secrets are never logged or returned.
+`pipefy ai-provider list`, `pipefy ai-provider create`, `update`, `delete`, `set-active-status`, `default set`, and `default reset` manage providers. Create/update require `--config-file` with a local JSON file, never inline credentials. Its `provider` key selects the vendor; secrets are never logged or returned.
 
 Knowledge-base create/update commands automatically gate on `pipefy kb validate-access`; this proves read access only, not write entitlement. Use `pipefy kb list` to obtain IDs for attachment.
 

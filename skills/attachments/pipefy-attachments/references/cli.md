@@ -21,4 +21,4 @@ pipefy attachment upload --org 42 --card 1234 --field document_upload --file ~/r
 pipefy attachment upload --org 42 --record tr-555 --field document_upload --file /tmp/export.csv
 ```
 
-The CLI exposes 2 attachment commands.
+With `--json`, an upload failure reports `step=presigned_url`, `s3_upload`, or `field_update`. For `s3_upload`, retry the whole command to mint a fresh URL; reusing the expired URL cannot work. Local file-read errors are reported as CLI parameter errors before this JSON result.

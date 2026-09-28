@@ -49,10 +49,12 @@ tags: [pipefy, <domain>, ...]
 
 # Title
 
-Short intro (1-2 sentences). State the tool count when relevant.
+Short intro (1-2 sentences).
 
+[When the workflow has surface-specific guidance, add the relevant links:
 MCP clients: read [references/mcp.md](references/mcp.md).
 CLI users: read [references/cli.md](references/cli.md).
+Omit the links for a router without reference files.]
 
 ---
 

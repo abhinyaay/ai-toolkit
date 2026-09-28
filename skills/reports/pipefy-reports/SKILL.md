@@ -3,7 +3,7 @@ name: pipefy-reports
 description: >
   Use this skill when the user wants to create, read, update, delete, or
   export pipe reports or organization reports. Covers the async export
-  workflow (trigger, poll, download). 17 operations.
+  workflow (trigger, poll, download).
 tags: [pipefy, reports, exports, pipe-reports, organization-reports]
 ---
 
@@ -11,7 +11,7 @@ tags: [pipefy, reports, exports, pipe-reports, organization-reports]
 
 Read the [MCP reference](references/mcp.md) or [CLI reference](references/cli.md) for the surface you are using. Load only the relevant reference.
 
-Pipe reports and organization reports: discovery, CRUD, and async exports. **17 operations.**
+Pipe reports and organization reports: discovery, CRUD, and async exports.
 
 ---
 
@@ -32,7 +32,7 @@ Pipe reports and organization reports: discovery, CRUD, and async exports. **17 
 | `get_pipe_report_filterable_fields` | Yes | Discover filterable fields for a report. |
 | `create_pipe_report` | No | Create a new pipe report. |
 | `update_pipe_report` | No | Update report name or filters. |
-| `delete_pipe_report` | No | Destructive deletion; use the selected surface’s confirmation flow. |
+| `delete_pipe_report` | No | **Destructive; review and approve first.** Use the selected surface's confirmation flow if one exists. |
 | `export_pipe_report` | No | Trigger async export. |
 
 ## Organization report tools
@@ -43,7 +43,7 @@ Pipe reports and organization reports: discovery, CRUD, and async exports. **17 
 | `get_organization_report` | Yes | Single org report data. |
 | `create_organization_report` | No | Create an org-wide report. |
 | `update_organization_report` | No | Update report config. |
-| `delete_organization_report` | No | Destructive deletion; use the selected surface’s confirmation flow. |
+| `delete_organization_report` | No | **Destructive; review and approve first.** Use the selected surface's confirmation flow if one exists. |
 | `export_organization_report` | No | Trigger async export. |
 
 ## Export status & download
@@ -60,11 +60,11 @@ Pipe reports and organization reports: discovery, CRUD, and async exports. **17 
 
 1. **List available reports:**
 
-   Operation: `get_pipe_reports pipe_id=67890`
+   Operation: `get_pipe_reports pipe_uuid=<PIPE_UUID>` (`get_pipe` supplies the UUID).
 
 2. **Trigger the export:**
 
-   Operation: `export_pipe_report report_id=123`
+   Operation: `export_pipe_report pipe_id=67890 pipe_report_id=123`
 
 3. **Poll until finished:**
 
@@ -80,7 +80,7 @@ Pipe reports and organization reports: discovery, CRUD, and async exports. **17 
 
 1. **Discover filterable fields:**
 
-   Operation: `get_pipe_report_filterable_fields pipe_id=67890`
+   Operation: `get_pipe_report_filterable_fields pipe_uuid=<PIPE_UUID>` (`get_pipe` supplies the UUID).
 
 2. **Create the report with a `ReportCardsFilter` shape** (not a top-level `current_phase` array):
 

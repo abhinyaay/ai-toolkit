@@ -21,6 +21,5 @@ get_ipaas_tools pipe_id=<pipe_id>
 get_ipaas_tools pipe_id=<pipe_id> tool_name=<flow-builder entry>
 ```
 
-This workflow exposes 4 MCP tools.
 
 The MCP server exposes it through **4 meta-tools**: the flow-builder verbs are catalog entries you discover per pipe and invoke through `call_ipaas_tool`, never a fixed tool list.

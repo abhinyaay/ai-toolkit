@@ -13,7 +13,7 @@ metadata:
 
 # Pipefy toolkit setup (first-time onboarding)
 
-Read the [MCP reference](references/mcp.md) or [CLI reference](references/cli.md) for the surface you are using. Load only the relevant reference.
+Choose a connection path below, then read the [MCP reference](references/mcp.md) or [CLI reference](references/cli.md) for that path. Load only the relevant reference.
 
 **Canonical install snippets** live only in the root [`README.md#installation`](https://github.com/pipefy/ai-toolkit/blob/main/README.md#installation) — there is no second copy of the commands. This skill is the agent **checklist** — print or run the README blocks verbatim; do not invent alternate commands.
 
@@ -32,7 +32,20 @@ Edge cases: [`packages/mcp/README.md`](https://github.com/pipefy/ai-toolkit/blob
 
 ## Steps
 
-1. **Choose one path** — ask the user; do not pick silently. Respect whether they want a hosted connection, a client plugin, a local toolkit, or CLI only. Use the selected reference’s client-specific choice question and install instructions.
+1. **Choose one path** — ask the user; do not pick silently. Respect whether they want a hosted connection, a client plugin, a local toolkit, or CLI only.
+
+   If they only say “Claude Code”, ask: Hosted MCP (zero local Python) or the Claude Code plugin (slash commands and local CLI)? If unsure, suggest Hosted.
+
+   If they only say “Cursor”, ask: Cursor Marketplace plugin (hosted, no local Python) or Quick install (local CLI and tools that read local files)? If unsure, suggest the plugin.
+
+   | Path | README section | Outcome |
+   |------|----------------|---------|
+   | Cursor Marketplace plugin | [Cursor Marketplace plugin](https://github.com/pipefy/ai-toolkit/blob/main/README.md#6-cursor-marketplace-plugin) | Hosted server, browser sign-in, no local Python |
+   | Hosted MCP | [Hosted MCP](https://github.com/pipefy/ai-toolkit/blob/main/README.md#1-hosted-mcp-claude-code) | HTTPS `mcp.pipefy.com` |
+   | Local toolkit | [Quick install](https://github.com/pipefy/ai-toolkit/blob/main/README.md#3-quick-install-script) | Local server and CLI, including local-file tools |
+   | Claude Code plugin | [Claude Code plugin](https://github.com/pipefy/ai-toolkit/blob/main/README.md#2-claude-code-plugin) | Marketplace and slash install/login |
+   | CLI only | [CLI](https://github.com/pipefy/ai-toolkit/blob/main/README.md#4-cli-only) | `pipefy` on PATH; no MCP |
+
 2. **Execute the canonical install instructions** for that path. Keep client setup and local installation aligned with the user's choice.
 3. **Authenticate** using the selected path's login flow.
 4. **Verify** access with a permitted read-only organization operation (`list_organizations` needs no id and surfaces organization ids), or the local installation check. Check for conflicting registrations using the selected reference.

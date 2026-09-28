@@ -7,7 +7,7 @@ Destructive operations use `--yes` (no token), only after showing affected data 
 | Operation | CLI |
 | ------------ | ----- |
 | `get_tables` | `pipefy table list` |
-| `search_tables` | `pipefy table list --search` |
+| `search_tables` | `pipefy table list --name <table_name>` |
 | `get_table` | `pipefy table get <id>` |
 | `create_table` | `pipefy table create` |
 | `update_table` | `pipefy table update <id>` |

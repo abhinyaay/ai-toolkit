@@ -3,7 +3,7 @@ name: pipefy-automations
 description: >
   Use this skill when the user wants to create, read, update, or delete
   traditional automations (if/then rules) or AI automations (prompt-driven).
-  Covers 16 operations. For AI agents (conversational), see `pipefy-ai-agents`.
+  For AI agents (conversational), see `pipefy-ai-agents`.
 tags: [pipefy, automations, ai-automations, rules]
 ---
 
@@ -11,7 +11,7 @@ tags: [pipefy, automations, ai-automations, rules]
 
 Read only the reference for your active surface: [MCP](references/mcp.md) or [CLI](references/cli.md). The workflows below use shared operation names and arguments.
 
-Traditional automations (if/then rules), AI automations (prompt-driven), task automations, and simulation. **16 operations.**
+Traditional automations (if/then rules), AI automations (prompt-driven), task automations, and simulation.
 
 For AI agents (conversational agents with behaviors), see `pipefy-ai-agents`.
 
@@ -71,11 +71,7 @@ Logs, usage, and job exports for automations live in `pipefy-observability` (`ge
 
    Returns `valid:true|false`, `problems`, `warnings`, `field_map`. Catches mistakes in one read-only call vs 2–3 failed mutation roundtrips.
 
-4. **Create the automation** (only if `valid:true`):
-
-   ```
-   create_ai_automation pipe_id=67890 trigger_event="card_created" prompt="Summarize %{900000101} and comment." field_ids=["900000101"]
-   ```
+4. **Create the automation** (only if `valid:true`): use the selected event ID, pipe ID, prompt, output field IDs, and a name. MCP accepts these as `event_id`, `pipe_id`, `prompt`, `field_ids`, and `name`; the SDK takes a `CreateAiAutomationInput` containing them. See the active surface reference for invocation syntax.
 
 ---
 

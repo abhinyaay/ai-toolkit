@@ -40,7 +40,7 @@ This skill activates when the user wants **consulting help** to design a process
 
 1. **Research existing org structure:**
 
-   Operation: `search_pipes name=""`  (empty search returns all visible pipes)
+   Operation: `search_pipes pipe_name=""` (empty search returns all visible pipes)
    Operation: `get_organization organization_id=<id>`
 
 2. **Understand the process intent:**

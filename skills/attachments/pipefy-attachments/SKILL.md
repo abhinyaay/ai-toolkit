@@ -15,7 +15,7 @@ MCP clients: read [references/mcp.md](references/mcp.md). CLI users: read [refer
 
 Upload one file at a time to a card or table-record attachment field. The
 upload goes through Pipefy's presigned URL flow (request URL, S3 PUT, then
-field update). **3 operations.**
+field update).
 
 ---
 
@@ -123,8 +123,10 @@ premature signed URL) as a finished upload.
 ## Failure modes
 
 Check source accessibility, the 100 MiB one-shot limit, upload expiry and signed
-headers, and write access to the attachment field. The presigned handshake
-requires checking the client PUT and field update separately from minting.
+headers, and write access to the attachment field. If a signed URL expires,
+mint a new one; retrying the PUT against the old URL does not refresh it. The
+presigned handshake requires checking the client PUT and field update separately
+from minting.
 
 ## See also
 

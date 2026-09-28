@@ -82,22 +82,22 @@ The user asks to analyze or improve an existing process:
 
 Each round focuses on 1–2 improvements; report results before proceeding.
 
-**Example: add an overdue automation**
+**Example: automate a repeated manual step**
 
-1. Identify the stalled phase and threshold (e.g., "Under Review" > 3 days).
-2. Check automation events: `get_automation_events`
+1. Identify the manual step and its trigger.
+2. Call `get_automation_events` and `get_automation_actions` for the pipe; select a supported event and action.
 3. Create the automation:
 
-   Operation: `create_automation pipe_id=<id> name="Overdue Alert" trigger_event="card_overdue" actions='[{"type":"send_email","to":"assignee"}]'`
+   Operation: `create_automation pipe_id=<id> name="Automate manual step" trigger_id=<EVENT_ID> action_id=<ACTION_ID> active=false`
 
-4. Report: "Added overdue automation to 'Under Review' phase — triggers after 3 days and emails the assignee."
+4. Verify the rule before activating it, then report the actual event and action used. If the desired event or action is unavailable, report the limitation instead of guessing an ID.
 
 **Example: add a field condition**
 
 1. Identify a field that should only show when another field has a specific value.
-2. Create the condition:
+2. Read the field-condition input schema, then create the condition with its required `name`, `condition` dict, and `actions` list:
 
-   Operation: `create_field_condition pipe_id=<id> phase_id=<phase_id> action="show" when='{"field_id":"<f1>","value":"Yes"}' fields='["<f2>"]'`
+   Operation: `create_field_condition phase_id=<PHASE_ID> name="Show follow-up" condition=<CONDITION_DICT> actions=<ACTION_DICTS>`
 
 ---
 

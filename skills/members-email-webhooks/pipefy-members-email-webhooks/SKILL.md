@@ -2,7 +2,7 @@
 name: pipefy-members-email-webhooks
 description: >
   Use this skill when the user wants to manage pipe membership, send or read
-  card inbox emails, use email templates, or manage webhooks. Covers 12 operations.
+  card inbox emails, use email templates, or manage webhooks.
 tags: [pipefy, members, email, webhooks, inbox]
 ---
 
@@ -10,7 +10,7 @@ tags: [pipefy, members, email, webhooks, inbox]
 
 MCP clients: read [references/mcp.md](references/mcp.md). CLI users: read [references/cli.md](references/cli.md). Examples below describe shared operation arguments.
 
-Manage pipe membership, send emails from card inboxes, read inbox replies, and manage webhooks. **12 operations.**
+Manage pipe membership, send emails from card inboxes, read inbox replies, and manage webhooks.
 
 ---
 

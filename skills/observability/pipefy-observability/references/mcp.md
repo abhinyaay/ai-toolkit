@@ -9,15 +9,15 @@ get_pipe pipe_id=67890
 ```
 
 ```text
-get_ai_agent_logs repo_uuid=<UUID> page=1
+get_ai_agent_logs repo_uuid=<UUID> first=30
 ```
 
 ```text
-get_ai_credit_usage organization_id=123
+get_ai_credit_usage organization_uuid=123 period="current_month"
 ```
 
 ```text
-toggle_ai_agent_status agent_id=456
+toggle_ai_agent_status uuid=<AGENT_UUID> active=true
 ```
 
 ```text

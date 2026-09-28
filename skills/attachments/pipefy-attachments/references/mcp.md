@@ -114,5 +114,3 @@ upload_attachment_to_card organization_id=42 card_id=1234 field_id=document_uplo
 ```text
 upload_attachment_to_card ... file_url=https://example.com/abc123.pdf file_name=Invoice-2026.pdf
 ```
-
-This workflow exposes 3 MCP tools.

@@ -4,7 +4,7 @@
 
 `create_ai_agent` / `update_ai_agent` do not auto-preflight. Call `validate_ai_agent_behaviors` before writing. Knowledge-base create/update tools do not auto-probe: call `validate_knowledge_base_access` first.
 
-The MCP tool auto-injects `referenceId` and `%{action:<uuid>}` placeholders; do not generate these yourself. On a behavior save failure, it auto-validates the payload. If structurally correct, `RECORD_NOT_SAVED` indicates a pipe-level restriction rather than a payload problem.
+On a behavior save failure, the MCP tool auto-validates the payload. If structurally correct, `RECORD_NOT_SAVED` indicates a pipe-level restriction rather than a payload problem.
 
 ## Hosted and local profiles
 

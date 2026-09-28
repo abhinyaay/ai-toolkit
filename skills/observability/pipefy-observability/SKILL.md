@@ -3,7 +3,7 @@ name: pipefy-observability
 description: >
   Use this skill when the user wants to check AI agent logs, automation
   execution logs, org-level usage stats, AI credit consumption, or export
-  automation job history. Covers 11 operations.
+  automation job history.
 tags: [pipefy, observability, logs, usage, credits, exports]
 ---
 
@@ -11,7 +11,7 @@ tags: [pipefy, observability, logs, usage, credits, exports]
 
 Read the [MCP reference](references/mcp.md) or [CLI reference](references/cli.md) for the surface you are using. Load only the relevant reference.
 
-Monitor AI agent and automation execution, usage stats, credit consumption, and export job history. **11 operations.**
+Monitor AI agent and automation execution, usage stats, credit consumption, and export job history.
 
 ---
 
@@ -55,17 +55,17 @@ Full identifier map: [observability identifiers](https://github.com/pipefy/ai-to
 
 2. **Fetch recent agent logs:**
 
-   Operation: `get_ai_agent_logs repo_uuid=<UUID> page=1`
+   Operation: `get_ai_agent_logs repo_uuid=<UUID> first=30`
 
 3. **Identify the failed execution** — look for `status: failed` entries.
 
 4. **Check credit usage** if the agent stopped unexpectedly:
 
-   Operation: `get_ai_credit_usage organization_id=123`
+   Operation: `get_ai_credit_usage organization_uuid=123 period="current_month"`
 
 5. **Fix and re-enable** — update the agent config (see `pipefy-ai-agents`) and toggle status:
 
-   Operation: `toggle_ai_agent_status agent_id=456`
+   Operation: `toggle_ai_agent_status` with the agent UUID and `active=true` (SDK: `agent_uuid`; MCP: `uuid`).
 
 ---
 

@@ -3,7 +3,7 @@
 ## Invocation examples
 
 ```text
-search_pipes name=""
+search_pipes pipe_name=""
 ```
 
 An empty search returns all visible pipes.

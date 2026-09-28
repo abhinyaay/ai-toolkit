@@ -34,23 +34,7 @@ Setup is outside the Pipefy MCP tool surface. After auth succeeds, verify with:
 
 ## Steps
 
-1. **Choose one path** — ask the user; do not pick silently.
-
-   If they only say “Claude Code” (no path), ask a **closed** question:
-
-   > Hosted MCP (zero local Python, `mcp.pipefy.com`) or the Claude Code plugin (slash commands + local CLI)? If you’re unsure, Hosted is the usual first try.
-
-   If they only say “Cursor” (no path), ask a **closed** question:
-
-   > Cursor Marketplace plugin (hosted server, browser sign-in, no local Python) or the Quick-install script (local CLI, plus the tools that read local files)? If you’re unsure, the plugin is the usual first try.
-
-   | Path | README section | Outcome |
-   |------|----------------|---------|
-   | Cursor Marketplace plugin | [Cursor Marketplace plugin](https://github.com/pipefy/ai-toolkit/blob/main/README.md#6-cursor-marketplace-plugin) | Hosted `mcp.pipefy.com`, browser sign-in, no local Python |
-   | Hosted MCP | [Hosted MCP](https://github.com/pipefy/ai-toolkit/blob/main/README.md#1-hosted-mcp-claude-code) | HTTPS `mcp.pipefy.com` (remote-safe tools) |
-   | Local toolkit | [Quick install](https://github.com/pipefy/ai-toolkit/blob/main/README.md#3-quick-install-script) | `install.sh` → local server + CLI, including the tools that read local files |
-   | Claude Code plugin | [Claude Code plugin](https://github.com/pipefy/ai-toolkit/blob/main/README.md#2-claude-code-plugin) | Marketplace + slash install/login |
-   | CLI only | [CLI](https://github.com/pipefy/ai-toolkit/blob/main/README.md#4-cli-only) | `pipefy` on PATH; no MCP |
+1. **Choose one path** — use the questions and five-path table in the shared skill before selecting this reference.
 
    **Never** register both a hosted HTTP and a local stdio/plugin Pipefy server, whatever they are named: a second registration shadows the one you meant to use. Switching between paths is remove-then-add — [`docs/uninstall.md`](https://github.com/pipefy/ai-toolkit/blob/main/docs/uninstall.md#switching-channels). On Cursor that applies to the Marketplace plugin and any entry in `~/.cursor/mcp.json`, including one written by `install.sh --client cursor`.
 

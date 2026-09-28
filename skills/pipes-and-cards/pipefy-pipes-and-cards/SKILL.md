@@ -3,7 +3,7 @@ name: pipefy-pipes-and-cards
 description: >
   Use this skill when the user wants to read, create, update, or delete
   pipes, phases, phase fields, labels, cards, comments, or field conditions.
-  Covers 40 operations for the core pipe and card lifecycle. Use the
+  Use the
   seed-pipe-across-phases workflow when populating empty phases for demos or QA.
 tags: [pipefy, pipes, cards, phases, fields, labels, comments, field-conditions]
 ---
@@ -12,7 +12,7 @@ tags: [pipefy, pipes, cards, phases, fields, labels, comments, field-conditions]
 
 Read only the reference for your active surface: [MCP](references/mcp.md) or [CLI](references/cli.md). The workflows below use shared operation names and arguments.
 
-Read, create, update, and delete pipes, phases, phase fields, labels, cards, attachments, and field conditions. **40 operations.**
+Read, create, update, and delete pipes, phases, phase fields, labels, cards, attachments, and field conditions.
 
 ---
 
@@ -34,7 +34,7 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, att
 | `search_pipes` | Yes | Search by name pattern. |
 | `create_pipe` | No | Create a new pipe in the org. |
 | `update_pipe` | No | Rename or change pipe settings. |
-| `delete_pipe` | No | Destructive delete. |
+| `delete_pipe` | No | **Destructive; review and approve first.** |
 | `clone_pipe` | No | Clone an existing pipe. |
 | `get_pipe_members` | Yes | List members of a pipe. |
 
@@ -57,7 +57,7 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, att
 | `get_pipe` | Yes | Read phase metadata from the pipe response. |
 | `create_phase` | No | Add a phase to a pipe. |
 | `update_phase` | No | Rename, reorder, set done flag. |
-| `delete_phase` | No | Destructive delete. |
+| `delete_phase` | No | **Destructive; review and approve first.** |
 | `get_phase_allowed_move_targets` | Yes | Valid destination phases before `move_card_to_phase` (UI-configured edges only). |
 | `get_phase_cards_count` | Yes | Native per-phase card count via `get_phase`. |
 | `get_phase_cards` | Yes | Paginated cards in a phase. |
@@ -94,7 +94,7 @@ Before `move_card_to_phase`, call `get_phase_allowed_move_targets`. Required emp
 3. **Create cards in empty phases** — loop `create_card` with `phase_id`. When `fields` is non-empty, keys are filtered via `get_phase_fields(phase_id)` and `get_start_form_fields(pipe_id)`.
 
    ```
-   create_card pipe_id="306996634" phase_id="340012345" title="Seeded"
+   create_card pipe_id="306996634" phase_id="340012345" title="Seeded" fields={}
    ```
 
 4. **Verify inventory** — `get_phase_cards(phase_id, first=50)` and confirm expected card IDs/titles.
@@ -123,7 +123,7 @@ Before `move_card_to_phase`, call `get_phase_allowed_move_targets`. Required emp
 | `get_start_form_fields` | Yes | List start-form fields for card creation. |
 | `create_phase_field` | No | Add field to a phase. |
 | `update_phase_field` | No | Rename, reorder, change required flag. |
-| `delete_phase_field` | No | Destructive delete. |
+| `delete_phase_field` | No | **Destructive; review and approve first.** |
 
 **Discover field types:**
 
@@ -145,10 +145,10 @@ This returns valid `type` enum values and their descriptions.
 | `update_card` | No | Update title, assignees, labels, due date, or fields. For list-valued **fields** (connections, attachments, checklists), prefer `field_updates` with `operation` ADD/REMOVE. Pipe labels and assignees are card attributes (`label_ids` / `assignee_ids`, replace-all), not fields — see Label operations. If `field_updates` is set, attribute args are discarded. For connectors, send related **card ids**. |
 | `update_card_field` | No | Single-field `updateCardField`; list-valued fields are **replace-all**. For connectors, values are related **card ids** (not display titles). Do not rebuild from `get_card` `value` (titles only); read ids via `get_card_relations`. Prefer `update_card` + ADD/REMOVE for fields. Pipe labels use `label_ids`, not this tool. |
 | `move_card_to_phase` | No | Call `get_phase_allowed_move_targets` first; required empty fields may block the move. |
-| `delete_card` | No | Destructive delete. |
+| `delete_card` | No | **Destructive; review and approve first.** |
 | `add_card_comment` | No | Add a text comment to a card. |
 | `update_comment` | No | Update an existing card comment. |
-| `delete_comment` | No | Destructive delete. |
+| `delete_comment` | No | **Destructive; review and approve first.** |
 | `upload_attachment_to_card` | No | Attach a file to an attachment field (`field_id` = slug). See `pipefy-attachments`. |
 
 ### Steps — create a card
@@ -182,7 +182,7 @@ Read `pageInfo.hasNextPage` and `pageInfo.endCursor` from the response; pass `af
 | `get_pipe` | Yes | List pipe labels from `labels` in the pipe response. |
 | `create_label` | No | Create a label with a color. |
 | `update_label` | No | Rename or recolor. |
-| `delete_label` | No | Destructive delete. |
+| `delete_label` | No | **Destructive; review and approve first.** |
 
 These tools manage label definitions on the pipe. Applying a pipe label to a card is `update_card(label_ids=[...])`, which **replaces** the card's whole label list: include every id that should remain; do not send only the new one. `get_card` does not return labels — read current ids via `execute_graphql` (`card(id: ...) { labels { id } }`), merge, then write. `field_updates` with `operation` ADD/REMOVE is for list-valued **fields**, not for card-attribute labels. When the user wants a label applied **automatically** ("mark it late when it goes past the due date"), stop and read `pipefy-automations` (applying a label has no automation action): no automation action does it, and driving `update_card` over a set of cards makes the agent the runtime instead of the process.
 
@@ -196,7 +196,7 @@ These tools manage label definitions on the pipe. Applying a pipe label to a car
 | `get_field_condition` | Load one field condition by ID. |
 | `create_field_condition` | Create show/hide rule. Verify that the rule is on the requested phase before reporting success. |
 | `update_field_condition` | Update condition action or rule. |
-| `delete_field_condition` | Destructive delete. |
+| `delete_field_condition` | **Destructive; review and approve first.** |
 
 Do not hide a required field; clear `required` first.
 

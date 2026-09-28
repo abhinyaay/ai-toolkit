@@ -3,7 +3,7 @@ name: pipefy-relations
 description: >
   Use this skill when the user wants to link pipes, tables, or cards across
   workflows — creating or managing pipe relations, table relations, or card
-  relations. Covers 8 operations.
+  relations.
 tags: [pipefy, relations, connections, pipes, cards, tables]
 ---
 
@@ -11,7 +11,7 @@ tags: [pipefy, relations, connections, pipes, cards, tables]
 
 MCP clients: read [references/mcp.md](references/mcp.md). CLI users: read [references/cli.md](references/cli.md). Examples below describe shared operation arguments.
 
-Link processes and cards across workflows. **8 operations.**
+Link processes and cards across workflows.
 
 ---
 
@@ -49,7 +49,7 @@ Link processes and cards across workflows. **8 operations.**
 
 2. **Create the card relation:**
 
-   Operation: `create_card_relation(source_id=<PIPE_RELATION_ID>, source_card_id=<PARENT_CARD_ID>, target_card_id=<CHILD_CARD_ID>)`
+   Operation: `create_card_relation(parent_id=<PARENT_CARD_ID>, child_id=<CHILD_CARD_ID>, source_id=<PIPE_RELATION_ID>)`
 
 3. **Verify:**
 
@@ -61,7 +61,7 @@ Link processes and cards across workflows. **8 operations.**
 
 1. **Create the relation between two pipes:**
 
-   Operation: `create_pipe_relation(parent_pipe_id=111, child_pipe_id=222, name="Support Escalation", auto_fill_field_id=<field_id>)`
+   Operation: `create_pipe_relation(parent_id=111, child_id=222, name="Support Escalation")`
 
 2. **Use the relation** — cards in the parent pipe can now be linked to cards in the child pipe using `create_card_relation`.
 

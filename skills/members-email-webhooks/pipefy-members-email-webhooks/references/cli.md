@@ -34,7 +34,7 @@ pipefy member list --pipe 67890
 ```
 
 ```bash
-pipefy member invite --pipe 67890 --email alice@example.com --role member
+pipefy member invite --pipe 67890 --members '[{"email":"alice@example.com","role_name":"member"}]'
 ```
 
 ```bash
@@ -50,7 +50,7 @@ pipefy webhook list --pipe 67890
 ```
 
 ```bash
-pipefy webhook create --pipe 67890 --url https://your-server.com/pipefy --events card.create,card.done
+pipefy webhook create --pipe 67890 --url https://your-server.com/pipefy --actions '["card.create","card.move"]'
 ```
 
 Destructive operations use `--yes` after reviewing the affected data and obtaining approval.

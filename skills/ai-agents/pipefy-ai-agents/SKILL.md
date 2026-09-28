@@ -3,7 +3,7 @@ name: pipefy-ai-agents
 description: >
   Use this skill when the user wants to create, read, update, delete,
   or troubleshoot AI agents (conversational agents with behaviors).
-  Covers 7 operations including pre-flight validation, plus pipe-scoped
+  Includes pre-flight validation and pipe-scoped
   knowledge bases (list, plain text/document/data lookup CRUD, access probe) attached via dataSourceIds.
   For traditional automations and AI automations, see `pipefy-automations`.
 tags: [pipefy, ai-agents, behaviors, conversational]
@@ -13,7 +13,7 @@ tags: [pipefy, ai-agents, behaviors, conversational]
 
 Read only the reference for your active surface: [MCP](references/mcp.md) or [CLI](references/cli.md). The workflows below use shared operation names and arguments.
 
-Conversational AI agents attached to pipes. Each agent has an agent-level instruction and 1–5 behaviors, each with its own trigger event, prompt, and actions. **7 operations.**
+Conversational AI agents attached to pipes. Each agent has an agent-level instruction and 1–5 behaviors, each with its own trigger event, prompt, and actions.
 
 For traditional automations and AI automations (prompt-driven), see `pipefy-automations`.
 
@@ -27,7 +27,7 @@ For traditional automations and AI automations (prompt-driven), see `pipefy-auto
 | `get_ai_agent` | Yes | Full agent config including behaviors. |
 | `create_ai_agent` | No | Create a new conversational agent (active by default; `active=false` to start disabled). |
 | `update_ai_agent` | No | **Full-replace** (not patch). Always send complete `behaviors`. Preserves disabled state. |
-| `delete_ai_agent` | No | Destructive delete. |
+| `delete_ai_agent` | No | **Destructive; review and approve first.** |
 | `toggle_ai_agent_status` | No | Explicit activate/deactivate. |
 | `validate_ai_agent_behaviors` | Yes | **Pre-flight check before create/update.** |
 
@@ -40,7 +40,7 @@ Execution logs live in `pipefy-observability` (`get_ai_agent_logs`, `get_ai_agen
 - Agents are **active by default**. Create-active clears the API default disabled shell via the configure update (omits `disabledAt`). Create-inactive (`active=false`) sets `disabled_at` explicitly on create and the chained update.
 - Routine `update_ai_agent` **preserves** disabled state — it does not intentionally reactivate. Prefer passing `disabled_at` from a prior `get_ai_agent` (`disabledAt`) to skip the preserve re-read; when omitted, the SDK re-reads and re-sends.
 - Explicit activate/deactivate: `toggle_ai_agent_status`.
-- After create/update, verify agent enablement. On `get_ai_agent`, `disabledAt` null means active; `behaviors[].active` is not agent enablement. An agent with no active behavior is disabled by the API regardless of enablement flags.
+- After create/update, check the response's `disabled_at` and `active` (`active` is true when `disabled_at` is null). On `get_ai_agent`, `disabledAt` null means active; `behaviors[].active` is not agent enablement. An agent with no active behavior is disabled by the API regardless of enablement flags.
 
 ---
 
@@ -164,7 +164,7 @@ Inside `actionParams.aiBehaviorParams` a behavior may also carry:
   `capabilityType` is not checked against a fixed set — any value passes through and the API validates the enum on write, so new capabilities work without a toolkit update. Validation checks **shape only, not entitlement** — a capability may still require organization-level enablement to have any effect, so a green pre-flight does not guarantee the capability is active for the org.
 - **`providerId`** / **`systemProviderId`** — pick the behavior's LLM provider. Set **at most one** (a behavior resolves to a single active provider). Discover valid IDs with `get_llm_providers`: each provider carries `type` — use `providerId` for a custom (`byom`) provider and `systemProviderId` for a Pipefy-managed (`system`) one. `get_default_llm_provider` shows what a behavior falls back to when neither is set. IDs are also visible in the organization's AI settings in the Pipefy UI.
 
-  **Bring your own model (custom provider).** First probe `validate_llm_provider_access`: read access does not prove the stronger `manage_ai_providers` permission or eligible plan required for writes. Create a provider and use its `id` as `providerId`. For `update_llm_provider`, send the full configuration: retain `__REDACTED__` placeholders to preserve existing secrets or supply new values to rotate them. Check `get_llm_provider_dependencies` before `delete_llm_provider`; use `set_llm_provider_active_status` for activation. `set_default_llm_provider` takes exactly one of `provider_id` / `system_provider_id`; `reset_default_llm_provider` clears the default.
+  **Bring your own model (custom provider).** First probe `validate_llm_provider_access`: read access does not prove the stronger `manage_ai_providers` permission or eligible plan required for writes. Create a provider with `configuration_file_path` (a local JSON file) and use its `id` as `providerId`. For `update_llm_provider`, send the full configuration: retain `__REDACTED__` placeholders to preserve existing secrets or supply new values to rotate them. Check `get_llm_provider_dependencies` before `delete_llm_provider`; use `set_llm_provider_active_status` for activation. `set_default_llm_provider` takes exactly one of `provider_id` / `system_provider_id`; `reset_default_llm_provider` clears the default.
 - **`dataSourceIds`** — knowledge base sources the behavior can draw on. Each ID is a knowledge base item ID from `get_ai_knowledge_bases`. Agents also carry an agent-level `data_source_ids`; the two are unioned. See [Knowledge bases](#knowledge-bases-data-sources) below for the create → attach flow.
 
 ```json
@@ -192,12 +192,12 @@ Inside `actionParams.aiBehaviorParams` a behavior may also carry:
 
 `create_ai_agent` with `name`, `repo_uuid`, `instruction`, and `behaviors`. One-call creation is preferred — avoids partial agent shells. Agents are **active by default**; pass `active=false` to start disabled (see [Active lifecycle](#active-lifecycle)).
 
-On create/update, slug `fieldId` values are resolved to numeric `internal_id`, `%{field:<slug>}` is rewritten to `%{field:<internal_id>}`, and `referencedFieldIds` is auto-populated when applicable.
+On create/update, slug `fieldId` values are resolved to numeric `internal_id`, `%{field:<slug>}` is rewritten to `%{field:<internal_id>}`, and `referencedFieldIds` is auto-populated when applicable. The SDK injects action `referenceId` values and `%{action:<uuid>}` placeholders for every surface; do not generate them yourself.
 
 ### 8 — Handle responses
 
-- **Success with `agent_uuid`** → verify agent enablement.
-- **Partial failure (UUID returned, behaviors rejected)** → call `update_ai_agent` with the **full required payload**: `uuid`, `repo_uuid` (same pipe UUID used on create), `name`, `instruction`, and complete `behaviors` (full-replace, not patch). Do NOT create a second agent. The create shell is often disabled; update preserves that state — call `toggle_ai_agent_status` after a successful recovery update if you need the agent active.
+- **Success with `agent_uuid`** → check `disabled_at` and `active` on the write response to verify agent enablement.
+- **Partial failure (behaviors rejected)** → the SDK raises `AiAgentConfigureError`; use its `.agent_uuid` to recover the existing shell. The MCP response carries `agent_uuid`. Call `update_ai_agent` with the **full required payload**: `uuid`, `repo_uuid` (same pipe UUID used on create), `name`, `instruction`, and complete `behaviors` (full-replace, not patch). Do NOT create a second agent. The create shell is often disabled; update preserves that state — call `toggle_ai_agent_status` after a successful recovery update if you need the agent active.
 - **Failure without UUID** → validation or API error. Trust the hint text in the enriched error.
 
 ### 9 — Verify
@@ -216,15 +216,15 @@ Knowledge bases are pipe-scoped data sources an agent draws on. Attach one by pu
 | `get_ai_knowledge_base_plain_text` | Yes | Fetch one plain text with its content. |
 | `create_ai_knowledge_base_plain_text` | No | Create a plain text (`name`, `content` 1-3500, `description` 1-900 — all required). |
 | `update_ai_knowledge_base_plain_text` | No | Partial update; pass at least one of name/content/description. |
-| `delete_ai_knowledge_base_plain_text` | No | Destructive delete. |
+| `delete_ai_knowledge_base_plain_text` | No | **Destructive; review and approve first.** |
 | `get_ai_knowledge_base_document` | Yes | Fetch one document's metadata (`content` is the stored URL, not text). |
-| `create_ai_knowledge_base_document` | No | Upload a PDF (`name`, `description` 1-900). `.pdf` + 20 MiB cap; indexing is asynchronous. |
+| `create_ai_knowledge_base_document` | No | Upload a PDF (`name`, `description` 1-900, `file_path`). `.pdf` + 20 MiB cap; indexing is asynchronous. |
 | `update_ai_knowledge_base_document` | No | Metadata-only update (name/description); no file replacement. |
-| `delete_ai_knowledge_base_document` | No | Destructive delete. |
+| `delete_ai_knowledge_base_document` | No | **Destructive; review and approve first.** |
 | `get_ai_knowledge_base_data_lookup` | Yes | Fetch one data lookup; the payload never includes `conditions` — keep the definition client-side. |
 | `create_ai_knowledge_base_data_lookup` | No | Create a data lookup (`name`, `description` 1-900, `source_repo_id` numeric pipe ID, `output_fields` 1-30, `conditions` — all required). |
 | `update_ai_knowledge_base_data_lookup` | No | Full replacement: resend `source_repo_id`/`output_fields`/`conditions` every call; omitted `search_query` clears it; only name/description are partial. |
-| `delete_ai_knowledge_base_data_lookup` | No | Destructive delete. |
+| `delete_ai_knowledge_base_data_lookup` | No | **Destructive; review and approve first.** |
 | `validate_knowledge_base_access` | Yes | Probe read access before writes. |
 
 ### Flow: validate-access → create plain text → attach
@@ -233,7 +233,7 @@ Knowledge bases are pipe-scoped data sources an agent draws on. Attach one by pu
 2. **Create the source** — `create_ai_knowledge_base_plain_text(pipe_uuid, name, content, description)`. Limits fail fast client-side: `content` 1-3500 chars, `description` 1-900 chars (both required). Keep the returned `id`.
 3. **Attach** — add that `id` to a behavior's `dataSourceIds` (or the agent-level `data_source_ids`) when calling `create_ai_agent` / `update_ai_agent`. Validate first with `validate_ai_agent_behaviors(pipe_id, behaviors, data_source_ids=[...])` — unknown IDs surface as warnings.
 
-For a **PDF document**, use `create_ai_knowledge_base_document` at step 2. Only `.pdf` is accepted, with a 20 MiB cap. Indexing is asynchronous, so the document may not be searchable immediately. Keep the returned `id` and attach it.
+For a **PDF document**, use `create_ai_knowledge_base_document` with `pipe_uuid`, `name`, `description`, and `file_path` at step 2. Only `.pdf` is accepted, with a 20 MiB cap. Indexing is asynchronous, so the document may not be searchable immediately. Keep the returned `id` and attach it.
 
 ### Data lookups: create with an AI-filled condition → attach → update (full replacement)
 

@@ -19,9 +19,9 @@ get_ai_agents repo_uuid=<PIPE_UUID>
 ```
 
 ```text
-create_automation pipe_id=<id> name="Overdue Alert" trigger_event="card_overdue" actions='[{"type":"send_email","to":"assignee"}]'
+create_automation pipe_id=<id> name="Automate manual step" trigger_id=<EVENT_ID> action_id=<ACTION_ID> active=false
 ```
 
 ```text
-create_field_condition pipe_id=<id> phase_id=<phase_id> action="show" when='{"field_id":"<f1>","value":"Yes"}' fields='["<f2>"]'
+create_field_condition phase_id=<PHASE_ID> name="Show follow-up" condition=<CONDITION_DICT> actions=<ACTION_DICTS>
 ```

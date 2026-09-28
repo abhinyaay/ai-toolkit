@@ -4,7 +4,7 @@ description: >
   Use this skill when you need to discover GraphQL type shapes, mutation
   signatures, enum values, or execute arbitrary GraphQL as a fallback.
   This is the first fallback tier (Tier 2) when dedicated operations fail
-  or don't exist for an operation. 7 operations.
+  or don't exist for an operation.
 tags: [pipefy, introspection, graphql, schema, fallback]
 ---
 
@@ -12,7 +12,7 @@ tags: [pipefy, introspection, graphql, schema, fallback]
 
 Read only the reference for your active surface: [MCP](references/mcp.md) or [CLI](references/cli.md). The workflows below use shared operation names and arguments.
 
-Schema discovery, organization info, and a fallback executor. **7 operations.**
+Schema discovery, organization info, and a fallback executor.
 
 This is **Tier 2** in the resolution strategy: when a dedicated operation fails or doesn't exist, use introspection to understand the API, then `execute_graphql` to run the operation directly.
 

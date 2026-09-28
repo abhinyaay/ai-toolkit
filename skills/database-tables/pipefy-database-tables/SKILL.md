@@ -3,7 +3,7 @@ name: pipefy-database-tables
 description: >
   Use this skill when the user wants to work with Pipefy Database Tables —
   creating/reading/updating/deleting tables, records (rows), or table fields
-  (schema columns). Covers 17 operations.
+  (schema columns).
 tags: [pipefy, database, tables, records, fields]
 ---
 
@@ -11,7 +11,7 @@ tags: [pipefy, database, tables, records, fields]
 
 MCP clients: read [references/mcp.md](references/mcp.md). CLI users: read [references/cli.md](references/cli.md). Examples below describe shared operation arguments.
 
-Tables, records (rows), schema columns (table fields), and attachments for Pipefy Database Tables. **17 operations.**
+Tables, records (rows), schema columns (table fields), and attachments for Pipefy Database Tables.
 
 ---
 
@@ -19,7 +19,7 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 
 - Use `introspect_type` on inputs such as `CreateTableFieldInput` / `UpdateTableFieldInput`.
 - **Pagination:** `get_table_records` and `find_records` support `first` / `after`; default page size is 50.
-- **`find_records` over paginated `get_table_records`** when you know the field value. One `find_records` call with a `column_id`/`search_value` filter beats N pages of `get_table_records`.
+- **`find_records` over paginated `get_table_records`** when you know the field value. One call with `field_id` and `field_value` beats N pages of `get_table_records`.
 
 ---
 
@@ -27,7 +27,7 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 
 | Operation | Read-only | Purpose |
 | ------------ | ----------- | --------- |
-| `get_tables` | Yes | List database tables by org. |
+| `get_tables` | Yes | Load database tables by their IDs. |
 | `search_tables` | Yes | Search tables by name. |
 | `get_table` | Yes | Table metadata and field schema. |
 | `create_table` | No | Create a new database table. |
@@ -51,7 +51,7 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 | Operation | Read-only | Purpose |
 | ------------ | ----------- | --------- |
 | `get_table_records` | Yes | Paginated list of all records in a table. |
-| `find_records` | Yes | Filter records by field value (JSON filter) — preferred over paginating `get_table_records`. |
+| `find_records` | Yes | Filter records by `field_id` and `field_value` — preferred over paginating `get_table_records`. |
 | `get_table_record` | Yes | Single record with all populated field values. |
 | `create_table_record` | No | Add a row to a table. |
 | `update_table_record` | No | Update one or more field values on a row. |
@@ -72,19 +72,19 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 
 1. **Get table ID** (if not known):
 
-   Operation: `get_tables(organization_id=123)`
+   Operation: `search_tables(table_name="Customers")` and select the table ID from the results.
 
 2. **Find the record** (use `find_records`, not pagination):
 
-   Operation: `find_records(table_id=456, filter='{"column_id":"email","search_value":"user@example.com"}')`
+   Operation: `find_records(table_id=456, field_id="email", field_value="user@example.com")`
 
 3. **Update one field** (targeted):
 
    Operation: `set_table_record_field_value(record_id=789, field_id="status", value="Active")`
 
-   **Update multiple fields:**
+   **Update record metadata** (such as title, due date, or status):
 
-   Operation: `update_table_record(record_id=789, node_fields='[{"field_id":"status","field_value":"Active"}]')`
+   Operation: `update_table_record(record_id=789, fields={"title":"Updated title"})`
 
 ---
 
@@ -110,7 +110,7 @@ Never delete without first reviewing the affected data.
 - **`get_table_record` / `get_table_records` omit empty fields.** Records only return populated fields, so you cannot tell "field unset" from "field doesn't exist" without calling `get_table` for the full schema.
 - **`create_table_record` title silently overridden.** When the first table field is a start-form-style label column, Pipefy uses that field's value as the record `title`, ignoring the `title` parameter. Don't rely on `title` if the first field auto-populates a label-like column.
 - **`create_table_field` rejects type:** call `introspect_type(type_name="CreateTableFieldInput")` for valid field types.
-- **`find_records` returns empty:** check that `column_id` matches a field's **ID** (not label) from `get_table`.
+- **`find_records` returns empty:** check that `field_id` matches a field's **ID** (not label) from `get_table`.
 - **Pagination cursor expired:** re-fetch from the beginning; cursors are short-lived.
 
 ## See also

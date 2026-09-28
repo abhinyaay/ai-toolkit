@@ -5,11 +5,11 @@ Use the operation names in the workflow as MCP tool names.
 ## Invocation examples
 
 ```text
-get_pipe_reports pipe_id=67890
+get_pipe_reports pipe_uuid=<PIPE_UUID>
 ```
 
 ```text
-export_pipe_report report_id=123
+export_pipe_report pipe_id=67890 pipe_report_id=123
 ```
 
 ```text
@@ -17,7 +17,7 @@ get_pipe_report_export export_id=<EXPORT_ID>
 ```
 
 ```text
-get_pipe_report_filterable_fields pipe_id=67890
+get_pipe_report_filterable_fields pipe_uuid=<PIPE_UUID>
 ```
 
 ```

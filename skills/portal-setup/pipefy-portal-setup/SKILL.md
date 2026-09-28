@@ -3,7 +3,7 @@ name: pipefy-portal-setup
 description: >
   Use this skill when the user wants to list, create, or configure Pipefy
   portals (main hub, pages, page elements, sub-portals, publish/unpublish).
-  Covers 20 operations on Interfaces + internal_api. Not for pipes/cards.
+  Uses Interfaces and internal_api. Not for pipes/cards.
 tags: [pipefy, portal, interfaces, sub-portal, pages, elements]
 ---
 
@@ -11,7 +11,7 @@ tags: [pipefy, portal, interfaces, sub-portal, pages, elements]
 
 MCP clients: read [references/mcp.md](references/mcp.md). CLI users: read [references/cli.md](references/cli.md). Examples below describe shared operation arguments.
 
-Configure an organization's Pipefy portal: bootstrap the main hub, add pages and widgets, wire and publish sub-portals. **20 operations** (Interfaces GraphQL + internal_api for sub-portal wiring).
+Configure an organization's Pipefy portal: bootstrap the main hub, add pages and widgets, wire and publish sub-portals (Interfaces GraphQL + internal_api for sub-portal wiring).
 
 Deep reference: [`docs/mcp/tools/portal.md`](https://github.com/pipefy/ai-toolkit/blob/main/docs/mcp/tools/portal.md). Parity matrix: [`docs/parity.md`](https://github.com/pipefy/ai-toolkit/blob/main/docs/parity.md). Env vars: [`docs/config.md`](https://github.com/pipefy/ai-toolkit/blob/main/docs/config.md).
 
@@ -185,11 +185,7 @@ Element `type` values (15): `text`, `table`, `field`, `embedLink`, `embedVideo`,
 
 7. **Optional — make the main hub public**
 
-   Operation arguments:
-
-   ```text
-   update_portal(portal_uuid="<MAIN_PORTAL_UUID>", visibility="public")
-   ```
+   Update `<MAIN_PORTAL_UUID>` with `visibility="public"` through `update_portal` (SDK argument: `interface_uuid`; MCP argument: `portal_uuid`).
 
 ---
 

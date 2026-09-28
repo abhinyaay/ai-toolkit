@@ -11,3 +11,9 @@ mixed automation page, not only the AI rules returned from that page.
 An invalid `create_automation` phase transition returns `success: false` with a **text** error message listing allowed destination phases by name and id, plus a hint that transition rules are configured in the Pipefy UI only (not editable via API). There is no structured `valid_destinations` field on this envelope.
 
 Invalid `field_map` field IDs fail before GraphQL with `success: false` and the offending ID.
+
+For the validated AI automation in the shared workflow, call `create_ai_automation` with `name`, `event_id`, `pipe_id`, `prompt`, and `field_ids`:
+
+```text
+create_ai_automation name="Summarize intake" event_id="card_created" pipe_id=67890 prompt="Summarize %{900000101} and comment." field_ids=["900000101"]
+```

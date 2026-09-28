@@ -17,11 +17,11 @@ Use the shared domain workflow in `SKILL.md`; apply the following controls only 
 Example (CLI):
 
 ```bash
-pipefy introspect mutation createCard --max-depth 2 --json
+pipefy introspect mutation createCard --max-depth 2
 ```
 
 ```bash
-pipefy introspect schema search automation --kind INPUT_OBJECT --json
+pipefy introspect schema search automation --kind INPUT_OBJECT
 ```
 
 ## Execute a mutation

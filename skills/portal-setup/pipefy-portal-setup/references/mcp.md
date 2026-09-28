@@ -74,6 +74,5 @@ update_portal portal_uuid="<MAIN_PORTAL_UUID>" visibility="public"
 unpublish_sub_portal portal_uuid="<MAIN_PORTAL_UUID>" element_id="<FORMS_ELEMENT_ID>"
 ```
 
-This workflow exposes 20 MCP tools.
 
 The GraphQL `id` is exposed as `uuid` (same value).

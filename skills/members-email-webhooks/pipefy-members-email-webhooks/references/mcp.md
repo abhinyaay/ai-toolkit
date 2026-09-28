@@ -37,5 +37,3 @@ create_webhook pipe_id=67890 url="https://your-server.com/pipefy" actions='["car
 Destructive operations use two steps: show the preview and obtain approval, then echo `confirmation_token` from the preview with `confirm=true`.
 
 `remove_member_from_pipe` verifies afterwards and warns if the member is still present (org-level permissions can override pipe removal).
-
-This workflow exposes 12 MCP tools.
