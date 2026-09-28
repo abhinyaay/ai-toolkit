@@ -10,6 +10,7 @@ from pipefy_sdk.phase_inventory import (
     get_phase_not_found_message,
     is_get_phase_not_found_error,
 )
+from pipefy_sdk.transition_hints import TRANSITION_RULES_HINT
 
 from pipefy_cli.commands._common import (
     ID_POSITIONAL_CONTEXT_SETTINGS,
@@ -179,6 +180,7 @@ def phase_create(
         )
 
     run_cli_command(ctx, json_out, factory)
+    typer.echo(TRANSITION_RULES_HINT, err=True)
 
 
 @phase_app.command("update", context_settings=ID_POSITIONAL_CONTEXT_SETTINGS)
@@ -243,6 +245,7 @@ def phase_update(
         return await client.update_phase(phase_id, **update_attrs)
 
     run_cli_command(ctx, json_out, factory)
+    typer.echo(TRANSITION_RULES_HINT, err=True)
 
 
 @phase_app.command("delete", context_settings=ID_POSITIONAL_CONTEXT_SETTINGS)
