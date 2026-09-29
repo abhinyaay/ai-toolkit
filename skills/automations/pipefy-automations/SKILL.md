@@ -162,7 +162,13 @@ Use when the user wants an if/then rule to **stamp or copy values** onto the tri
    simulate_automation pipe_id=67890 action_id=generate_with_ai sample_card_id=456
    ```
 
-3. Read the immediate result. It may contain `simulation_id` + `status:"processing"` with null `simulationResult`. No toolkit operation retrieves that simulation later. Record the ID and report that the result is pending; calling `simulate_automation` again starts a new simulation.
+3. Read the immediate result. It may contain `simulation_id` + `status:"processing"` with null `simulationResult`. Keep the ID and read the simulation again through `execute_graphql`; calling `simulate_automation` again starts a new simulation:
+
+   ```graphql
+   query { automationSimulation(simulationId: "<simulation_id>") { status simulationResult details { errorType message } } }
+   ```
+
+   Re-read after a short wait until `status` leaves `processing`. If it is still processing after a few reads, report the result as pending with the ID.
 
 ---
 
@@ -256,7 +262,7 @@ Use this pattern for approvals, financial decisions, content publication, and an
 
 - `get_automation` returns the new rule with correct trigger and actions.
 - `validate_ai_automation_prompt` returns `valid:true` before AI automation creation.
-- `simulate_automation` (AI rules) returns a simulation ID and its immediate status. Report a pending result as pending.
+- `simulate_automation` (AI rules) returns a simulation ID; a follow-up `automationSimulation` read returns the final `simulationResult`, or the result is reported as pending with the ID.
 
 ## Failure modes
 
@@ -271,7 +277,7 @@ Use this pattern for approvals, financial decisions, content publication, and an
 ### Other failure modes
 
 - **`simulate_automation` is AI-only.** Only `generate_with_ai` `action_id` accepted. For traditional rules, use `get_automation_logs` after the rule fires.
-- **Async simulation result.** A `processing` response has no final result yet. Keep the `simulation_id`; the toolkit has no follow-up read operation. `get_automation_logs` requires a real automation ID, and another `simulate_automation` call starts a new simulation.
+- **Async simulation result.** A `processing` response has no final result yet. Keep the `simulation_id` and read it with the `automationSimulation` query through `execute_graphql` (see [Steps — simulate](#steps--simulate-a-traditional-automation)). `get_automation_logs` requires a real automation ID, and another `simulate_automation` call starts a new simulation.
 - **`validate_ai_automation_prompt` returns `valid:false`.** Read `problems` (per-field) and `warnings`. Most common: prompt missing `%{internal_id}` reference, or `field_ids` overlap with prompt `%{id}` tokens.
 - **`create_automation` cycle detection.** Same-pipe `card_created` + `create_card` rejected with `"This automation can't be created! It would result in an endless card creation cycle."` Use a different trigger, target a different pipe, or use `update_card` instead.
 - **`create_automation` fails with unknown event/action.** Always run `get_automation_events` + `get_automation_actions` first; do not guess IDs.
