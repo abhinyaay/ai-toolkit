@@ -1094,6 +1094,51 @@ async def test_update_portal_page_layout_success(
 
 
 @pytest.mark.anyio
+async def test_update_portal_page_layout_accepts_empty_array(
+    portal_session, mock_portal_client
+):
+    mock_portal_client.update_portal_page_layout = AsyncMock(
+        return_value={"updatePageLayout": {"success": True}}
+    )
+
+    async with portal_session as session:
+        result = await session.call_tool(
+            "update_portal_page_layout",
+            {"page_id": _PAGE_UUID, "layout": []},
+        )
+
+    assert result.is_error is False
+    mock_portal_client.update_portal_page_layout.assert_awaited_once_with(
+        _PAGE_UUID, []
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "layout",
+    [
+        [{}],
+        [{"children": ["el-new"]}],
+        [{"id": "row-1", "type": "column", "children": ["el-new"]}],
+    ],
+)
+async def test_update_portal_page_layout_rejects_malformed_rows(
+    portal_session, mock_portal_client, extract_payload, layout
+):
+    async with portal_session as session:
+        result = await session.call_tool(
+            "update_portal_page_layout",
+            {"page_id": _PAGE_UUID, "layout": layout},
+        )
+
+    mock_portal_client.update_portal_page_layout.assert_not_called()
+    payload = extract_payload(result)
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "INVALID_ARGUMENTS"
+    assert "type 'row'" in tool_error_message(payload)
+
+
+@pytest.mark.anyio
 async def test_update_portal_page_layout_fails_when_success_false(
     portal_session, mock_portal_client, extract_payload
 ):
@@ -1265,8 +1310,14 @@ async def test_create_portal_element_with_layout_places_element(
         {"element_id": "el-new", "layout": {"rows": _PLACING_LAYOUT}},
         {"layout": _PLACING_LAYOUT},
         {"element_id": "el-elsewhere", "layout": _PLACING_LAYOUT},
+        {"element_id": "el-new", "layout": [{"children": ["el-new"]}]},
     ],
-    ids=["object-wrapper", "missing-element-id", "element-not-in-rows"],
+    ids=[
+        "object-wrapper",
+        "missing-element-id",
+        "element-not-in-rows",
+        "incomplete-row",
+    ],
 )
 async def test_create_portal_element_rejects_unplaceable_layout_before_client(
     portal_session, mock_portal_client, extract_payload, arguments

@@ -863,6 +863,66 @@ async def test_update_portal_page_layout_does_not_send_interface_uuid() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_update_portal_page_layout_accepts_empty_array() -> None:
+    """A page with no elements has an empty grid."""
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"updatePageLayout": {"success": True}},
+    )
+
+    await service.update_portal_page_layout(_PAGE_ID, [])
+
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables["input"]["layout"] == "[]"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_portal_page_layout_accepts_row_with_empty_children() -> None:
+    """A row may list no elements; only a missing or non-string children value is rejected."""
+    layout = [{"id": "row-1", "type": "row", "children": []}]
+    expected = json.dumps(layout, separators=(",", ":"), ensure_ascii=False)
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"updatePageLayout": {"success": True}},
+    )
+
+    await service.update_portal_page_layout(_PAGE_ID, layout)
+
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables["input"]["layout"] == expected
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_portal_page_layout_keeps_unknown_row_keys() -> None:
+    """Round-trip must send keys get_portal stored besides id, type, and children."""
+    layout = [{"id": "row-1", "type": "row", "children": ["el-1"], "minHeight": 2}]
+    expected = json.dumps(layout, separators=(",", ":"), ensure_ascii=False)
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"updatePageLayout": {"success": True}},
+    )
+
+    await service.update_portal_page_layout(_PAGE_ID, layout)
+
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables["input"]["layout"] == expected
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_portal_page_layout_rejects_malformed_row_before_query() -> None:
+    """The API stores layout JSON verbatim, so an incomplete row must not be sent."""
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"updatePageLayout": {"success": True}},
+    )
+
+    with pytest.raises(ValueError, match="type 'row'"):
+        await service.update_portal_page_layout(_PAGE_ID, [{}])
+
+    interfaces_executor.execute_query.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_create_portal_page_permission_denied_surfaces_actionable_message() -> (
     None
 ):
@@ -945,6 +1005,26 @@ async def test_create_portal_element_sends_layout_rows_as_interfaces_json() -> N
     assert variables["input"]["layout"] == json.dumps(
         rows, separators=(",", ":"), ensure_ascii=False
     )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_create_portal_element_rejects_malformed_layout_before_query() -> None:
+    """createElement.layout replaces the page grid, so a partial row stops locally."""
+    service, _public, interfaces_executor = _make_interfaces_service(
+        _CREATE_ELEMENT_RESPONSE,
+    )
+
+    with pytest.raises(ValidationError, match="type 'row'"):
+        await service.create_portal_element(
+            _PAGE_ID,
+            type="link",
+            metadata={"linkName": "Docs", "linkUrl": "https://example.com"},
+            element_id="el-new",
+            layout=[{"children": ["el-new"]}],
+        )
+
+    interfaces_executor.execute_query.assert_not_called()
 
 
 @pytest.mark.unit

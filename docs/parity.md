@@ -52,7 +52,7 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `create_pipe_report` | `pipefy report-pipe create` | shipped | Reports domain; `filter` preflight validates ReportCardsFilter shape (nested `operator` + `queries`). |
 | `create_portal` | `pipefy portal create` | shipped | `--organization-uuid`; idempotent (find-or-create main portal). |
 | `create_portal_page` | `pipefy portal page create` | shipped | `--portal-uuid`, `--title`; optional `--description`, `--index`. Empty main portal may bootstrap a templated page when the API omits `elements`. |
-| `create_portal_element` | `pipefy portal element create` | shipped | `--page-id`, `--type`, `--metadata` JSON; optional `--data-sources` JSON array, `--element-id` + `--layout` row array (create and place). SDK validates metadata and layout placement before GraphQL. |
+| `create_portal_element` | `pipefy portal element create` | shipped | `--page-id`, `--type`, `--metadata` JSON; optional `--data-sources` JSON array, `--element-id` + `--layout` row array (create and place). Each row needs a non-empty id, type "row", and children as non-empty strings. SDK validates metadata, row shape, and layout placement before GraphQL. |
 | `create_sub_portal` | `pipefy portal sub-portal create` | shipped | `--main-portal-uuid`; optional `--name`. Interfaces `createSubPortal`. |
 | `create_send_task_automation` | `pipefy automation send-task create` | shipped | (task title + recipients; optional `--event-params` / `--condition` JSON). |
 | `create_service_account` | `pipefy service-account create` | shipped | Org service account (`--org` uuid, `--name` <=20, `--role`, optional `--description` / `--expiration-unit` + `--expiration-value`; optional `--pipe-ids` + `--pipe-role` default admin to add it to pipes immediately). Returns the OAuth2 client secret + token endpoint once (never logged); remote-safe. |
@@ -201,7 +201,7 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `update_pipe_report` | `pipefy report-pipe update` | shipped | Reports domain; `filter` preflight validates ReportCardsFilter shape (nested `operator` + `queries`). |
 | `update_portal` | `pipefy portal update` | shipped | (`--name`, `--visibility`, optional `--color`, `--icon`, header flags). |
 | `update_portal_page` | `pipefy portal page update` | shipped | positional portal + page UUIDs; at least one of `--title`, `--description`, `--index`. |
-| `update_portal_page_layout` | `pipefy portal page layout update` | shipped | `--page-id` + `--layout` JSON only (no portal UUID on the wire). |
+| `update_portal_page_layout` | `pipefy portal page layout update` | shipped | `--page-id` + `--layout` JSON only (no portal UUID on the wire). Each row needs a non-empty id, type "row", and children as non-empty strings; `[]` is an empty page. Incomplete rows are rejected before the call. |
 | `update_portal_element` | `pipefy portal element update` | shipped | positional element + page UUIDs; `--type` + full `--metadata` JSON (API replace-all). |
 | `update_sub_portal_element` | `pipefy portal sub-portal attach` | shipped | positional portal, element, and sub-portal UUIDs; internal_api `updateSubPortalElement`. |
 | `update_table` | `pipefy table update` | shipped | — |

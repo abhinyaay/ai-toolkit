@@ -655,6 +655,72 @@ def test_portal_page_layout_update_json(runner, clean_pipefy_env, saved_cwd, oau
     )
 
 
+def test_portal_page_layout_update_accepts_empty_array(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-page-layout-empty")
+    payload = {"updatePageLayout": {"success": True}}
+    mock_client = MagicMock()
+    mock_client.update_portal_page_layout = AsyncMock(return_value=payload)
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "page",
+                "layout",
+                "update",
+                "--page-id",
+                _PAGE_UUID,
+                "--layout",
+                "[]",
+                "--json",
+            ],
+        )
+    assert result.exit_code == 0, result.stdout + (result.stderr or "")
+    mock_client.update_portal_page_layout.assert_awaited_once_with(_PAGE_UUID, [])
+
+
+@pytest.mark.parametrize(
+    "layout",
+    [
+        [{}],
+        [{"children": ["el-1"]}],
+        [{"id": "row-1", "type": "column", "children": ["el-1"]}],
+    ],
+)
+def test_page_layout_rejects_malformed_rows(
+    runner, clean_pipefy_env, saved_cwd, oauth_env, layout
+):
+    oauth_env("portal-layout-malformed-row")
+    mock_client = MagicMock()
+    mock_client.update_portal_page_layout = AsyncMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "page",
+                "layout",
+                "update",
+                "--page-id",
+                _PAGE_UUID,
+                "--layout",
+                json.dumps(layout),
+                "--json",
+            ],
+        )
+    assert result.exit_code == 2
+    assert "type 'row'" in result.stderr
+    mock_client.update_portal_page_layout.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # Portal element subcommands
 # ---------------------------------------------------------------------------
@@ -1706,8 +1772,17 @@ def test_portal_element_create_with_layout_places_element(
             "JSON array of row objects",
         ),
         (["--layout", json.dumps(_PLACING_LAYOUT)], "element_id"),
+        (
+            [
+                "--element-id",
+                "el-new",
+                "--layout",
+                json.dumps([{"children": ["el-new"]}]),
+            ],
+            "type 'row'",
+        ),
     ],
-    ids=["object-wrapper", "missing-element-id"],
+    ids=["object-wrapper", "missing-element-id", "incomplete-row"],
 )
 def test_portal_element_create_rejects_unplaceable_layout_exit_2(
     runner, clean_pipefy_env, saved_cwd, oauth_env, extra_args, expected

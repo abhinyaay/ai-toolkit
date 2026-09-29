@@ -1971,6 +1971,8 @@ class PipefyClient:
         Args:
             page_id: Page UUID.
             layout: Full row array from ``get_portal`` -> ``pages[].layout``.
+                Each row needs a non-empty id, type ``"row"``, and children as
+                non-empty strings. ``[]`` is an empty page.
         """
         return await self._portal_service.update_portal_page_layout(page_id, layout)
 
@@ -1995,7 +1997,10 @@ class PipefyClient:
             element_id: Optional client-provided element UUID.
             editable: Optional editable flag.
             layout: Optional full page layout row array (``get_portal`` ->
-                ``pages[].layout``) with a row whose children list ``element_id``.
+                ``pages[].layout``) with a row whose children list ``element_id``,
+                to create and place in one call. Each row needs a non-empty id,
+                type ``"row"``, and children as non-empty strings. Omit to leave
+                the grid untouched.
         """
         return await self._portal_service.create_portal_element(
             page_id,

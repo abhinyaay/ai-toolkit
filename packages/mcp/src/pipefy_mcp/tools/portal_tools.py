@@ -12,6 +12,7 @@ from pipefy_sdk.models.portal import (
     PortalElementType,
     PortalVisibility,
     UpdatePortalElementInput,
+    parse_portal_page_layout,
 )
 from pydantic import ValidationError
 
@@ -516,15 +517,22 @@ class PortalTools:
 
             Args:
                 page_id: Page UUID.
-                layout: Full array from get_portal -> pages[].layout. Preserve
-                    row IDs and children (element UUIDs), changing only intended
-                    positions. Do not wrap it in an object or infer positions from
-                    metadata.gridMap (element dimensions). Re-read to verify.
+                layout: Full array from get_portal -> pages[].layout. Each row
+                    needs a non-empty id, type "row", and children as non-empty
+                    strings. [] is an empty page. Preserve row IDs and children,
+                    changing only intended positions. Do not wrap it in an object
+                    or infer positions from metadata.gridMap (element dimensions).
+                    An incomplete row is rejected because the API stores this JSON
+                    verbatim. Re-read to verify.
             """
             client = get_pipefy_client(ctx)
             page_id, err = validate_tool_id(page_id, "page_id")
             if err is not None:
                 return err
+            try:
+                layout = parse_portal_page_layout(layout)
+            except ValueError as exc:
+                return tool_error(str(exc), code="INVALID_ARGUMENTS")
             await ctx.debug(f"update_portal_page_layout: page_id={page_id}")
             try:
                 result = await client.update_portal_page_layout(page_id, layout)
@@ -571,9 +579,10 @@ class PortalTools:
                     ``layout`` so a row can reference the new element.
                 editable: Optional editable flag.
                 layout: Optional full page layout row array (``id``, ``type: "row"``,
-                    ``children``). Preserve every existing row; never send an object
-                    wrapper. The API stores this JSON verbatim, so a wrong shape
-                    replaces the page grid.
+                    ``children``). Each row needs a non-empty id, type "row", and
+                    children as non-empty strings. Preserve every existing row;
+                    never send an object wrapper. The API stores this JSON verbatim,
+                    so an incomplete row replaces the page grid and is rejected.
             """
             client = get_pipefy_client(ctx)
             page_id, err = validate_tool_id(page_id, "page_id")

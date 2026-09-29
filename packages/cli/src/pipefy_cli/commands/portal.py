@@ -10,6 +10,7 @@ from pipefy_sdk import (
     PipefyClient,
     UpdatePortalElementInput,
 )
+from pipefy_sdk.models.portal import parse_portal_page_layout
 from pydantic import ValidationError
 
 from pipefy_cli.commands._common import (
@@ -137,7 +138,10 @@ def _parse_layout_rows(
         return None
     if not isinstance(parsed, list) or not all(isinstance(row, dict) for row in parsed):
         raise typer.BadParameter(_LAYOUT_ROWS_MESSAGE.format(option=option_name))
-    return parsed
+    try:
+        return parse_portal_page_layout(parsed)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
 
 def _portal_element_create_kwargs(
@@ -501,7 +505,10 @@ def portal_page_layout_update(
     layout: str = typer.Option(
         ...,
         "--layout",
-        help="Layout JSON for updatePageLayout.",
+        help=(
+            "Page layout row array. Each row needs a non-empty id, type row, "
+            "and string children. [] is an empty page."
+        ),
     ),
     json_out: bool = typer.Option(
         False,
@@ -555,8 +562,8 @@ def portal_element_create(
         "--layout",
         help=(
             "Full page layout row array (get_portal pages[].layout) with a row listing "
-            "--element-id, to create and place in one call. Omit to leave the grid "
-            "untouched."
+            "--element-id, to create and place in one call. Each row needs a non-empty "
+            "id, type row, and string children. Omit to leave the grid untouched."
         ),
     ),
     json_out: bool = typer.Option(

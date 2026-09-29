@@ -316,3 +316,61 @@ def test_create_portal_element_input_rejects_layout_that_omits_the_element() -> 
             element_id="el-not-in-layout",
             layout=_LAYOUT_ROWS,
         )
+
+
+@pytest.mark.unit
+def test_create_portal_element_input_rejects_empty_layout_array() -> None:
+    """An empty array places nothing, so create still requires a row for element_id."""
+    with pytest.raises(ValidationError, match="children include element_id"):
+        CreatePortalElementInput(
+            page_id=_PAGE_ID,
+            type="link",
+            metadata=_VALID_LINK_METADATA,
+            element_id=_ELEMENT_ID,
+            layout=[],
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "layout",
+    [
+        [{"children": [_ELEMENT_ID]}],
+        [{"id": "row-1", "children": [_ELEMENT_ID]}],
+        [{"id": "row-1", "type": "column", "children": [_ELEMENT_ID]}],
+        [{"id": "row-1", "type": "row", "children": [1]}],
+        [{"id": " ", "type": "row", "children": [_ELEMENT_ID]}],
+        [{"id": "row-1", "type": "row", "children": [" "]}],
+    ],
+)
+def test_create_portal_element_input_rejects_malformed_layout_rows(
+    layout: list[dict[str, object]],
+) -> None:
+    """A complete write replaces the grid, so a partial row must not be stored."""
+    with pytest.raises(ValidationError, match="type 'row'"):
+        CreatePortalElementInput(
+            page_id=_PAGE_ID,
+            type="link",
+            metadata=_VALID_LINK_METADATA,
+            element_id=_ELEMENT_ID,
+            layout=layout,
+        )
+
+
+@pytest.mark.unit
+def test_create_portal_element_input_keeps_unknown_layout_keys() -> None:
+    """Rows copied from get_portal may carry keys besides id, type, and children."""
+    row = {
+        "id": "row-1",
+        "type": "row",
+        "children": [_ELEMENT_ID],
+        "minHeight": 2,
+    }
+    element_input = CreatePortalElementInput(
+        page_id=_PAGE_ID,
+        type="link",
+        metadata=_VALID_LINK_METADATA,
+        element_id=_ELEMENT_ID,
+        layout=[dict(row)],
+    )
+    assert element_input.layout == [row]

@@ -2845,7 +2845,9 @@ Usage: pipefy portal element create [OPTIONS]
 │    --layout                TEXT  Full page layout row array (get_portal      │
 │                                  pages[].layout) with a row listing          │
 │                                  --element-id, to create and place in one    │
-│                                  call. Omit to leave the grid untouched.     │
+│                                  call. Each row needs a non-empty id, type   │
+│                                  row, and string children. Omit to leave the │
+│                                  grid untouched.                             │
 │    --json          -j            Print machine-readable JSON to stdout.      │
 │    --help                        Show this message and exit.                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -2997,7 +2999,10 @@ Usage: pipefy portal page layout update [OPTIONS]
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ *  --page-id          TEXT  Page UUID. [required]                            │
-│ *  --layout           TEXT  Layout JSON for updatePageLayout. [required]     │
+│ *  --layout           TEXT  Page layout row array. Each row needs a          │
+│                             non-empty id, type row, and string children. []  │
+│                             is an empty page.                                │
+│                             [required]                                       │
 │    --json     -j            Print machine-readable JSON to stdout.           │
 │    --help                   Show this message and exit.                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
