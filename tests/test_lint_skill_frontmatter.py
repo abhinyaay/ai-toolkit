@@ -18,6 +18,12 @@ lint = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(lint)
 
 
+def test_lint_uses_sdk_parser():
+    from pipefy_sdk import skills
+
+    assert lint.parse_skill_surfaces is skills.parse_skill_surfaces
+
+
 def skill(extra=""):
     return f"---\nname: pipefy-example\ndescription: >\n  Example workflow.\n{extra}---\n# Body\n"
 

@@ -5,6 +5,8 @@ on:
     paths:
       - "skills/**"
       - "tests/test_lint_skill_frontmatter.py"
+      - "packages/sdk/src/pipefy_sdk/skills/**"
+      - "packages/sdk/pyproject.toml"
       - "pyproject.toml"
       - "uv.lock"
       - "packages/mcp/src/pipefy_mcp/tools/registry.py"
@@ -14,6 +16,8 @@ on:
     paths:
       - "skills/**"
       - "tests/test_lint_skill_frontmatter.py"
+      - "packages/sdk/src/pipefy_sdk/skills/**"
+      - "packages/sdk/pyproject.toml"
       - "pyproject.toml"
       - "uv.lock"
       - "packages/mcp/src/pipefy_mcp/tools/registry.py"

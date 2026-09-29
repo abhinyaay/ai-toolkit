@@ -51,7 +51,11 @@ def test_directory_points_to_installed_catalog(
             "from pipefy_sdk import skills; "
             "root = skills.directory(); "
             "assert (root / 'pipefy-reports' / 'SKILL.md').is_file(); "
-            "assert (root / 'pipefy-reports' / 'references' / 'mcp.md').is_file()",
+            "assert (root / 'pipefy-reports' / 'references' / 'mcp.md').is_file(); "
+            "assert 'sdk' in skills.parse_skill_surfaces("
+            "(root / 'pipefy-reports' / 'SKILL.md').read_text(), 'pipefy-reports'); "
+            "assert 'sdk' not in skills.parse_skill_surfaces("
+            "(root / 'pipefy-ipaas' / 'SKILL.md').read_text(), 'pipefy-ipaas')",
         ],
         cwd=tmp_path,
         env={**os.environ, "PYTHONPATH": str(tmp_path)},
@@ -68,6 +72,15 @@ def test_wheel_contains_flat_catalog(artifacts: tuple[Path, Path]) -> None:
             name for name in archive.namelist() if name.startswith("pipefy_sdk/skills/")
         }
         assert packaged == catalog_files() | {"pipefy_sdk/skills/__init__.py"}
+
+
+def test_wheel_declares_yaml_runtime_dependency(artifacts: tuple[Path, Path]) -> None:
+    wheel, _ = artifacts
+    with zipfile.ZipFile(wheel) as archive:
+        metadata = next(
+            name for name in archive.namelist() if name.endswith(".dist-info/METADATA")
+        )
+        assert "Requires-Dist: pyyaml" in archive.read(metadata).decode()
 
 
 def test_sdist_can_rebuild_wheel_with_catalog(
