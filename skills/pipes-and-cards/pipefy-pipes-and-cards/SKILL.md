@@ -44,7 +44,7 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, att
 
    `create_pipe name="Customer Onboarding" organization_id=123`
 
-2. **Add phases** — call `create_phase` for each phase (see Phase section below). Omit `index` to append after existing workflow phases, or pass a **1-based** `index` to insert among phases returned by `get_pipe`. Prefer `1` or higher; `index: 0` creates a phase that does not appear in `get_pipe`'s `phases` list. `index` only controls order — it does **not** wire Phase Connections / `allowed_phases` (configure those in the Pipefy UI; use `get_phase_allowed_move_targets` before moves).
+2. **Add phases** — call `create_phase` for each phase (see Phase section below). `index` is a float sort key: a value between two existing keys inserts between those phases, a tie sorts before the existing phase, a new pipe's Inbox, Doing and Done keys are 1, 2 and 3, and 0 omits the phase from `get_pipe` phases. `get_pipe` does not return this key. Between 2 and 3, use two decimal places (`2.01`, `2.02`, ..., `2.99`): `2.10` is the same float as `2.1`, so the tenth value ties with the first. `index` does not wire Phase Connections / `allowed_phases` (configure those in the Pipefy UI; use `get_phase_allowed_move_targets` before moves).
 
 3. **Add start form fields** — call `create_phase_field` on the start form phase.
 
@@ -56,7 +56,7 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, att
 | ------------ | ----------- | --------- |
 | `get_pipe` | Yes | Read phase metadata from the pipe response. |
 | `create_phase` | No | Add a phase to a pipe. |
-| `update_phase` | No | Rename, reorder, set done flag. |
+| `update_phase` | No | Rename, set the done flag. `update_phase` has no index field. To move a phase that has no cards, delete it and create it again with the sort key. |
 | `delete_phase` | No | **Destructive; review and approve first.** |
 | `get_phase_allowed_move_targets` | Yes | Valid destination phases before `move_card_to_phase` (UI-configured edges only). |
 | `get_phase_cards_count` | Yes | Native per-phase card count via `get_phase`. |

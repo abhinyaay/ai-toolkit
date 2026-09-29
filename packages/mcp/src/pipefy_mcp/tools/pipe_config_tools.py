@@ -578,13 +578,14 @@ class PipeConfigTools:
                 pipe_id: Pipe that will contain the phase.
                 name: Phase name.
                 done: When True, marks a final/done phase.
-                index: Optional 1-based insert position among workflow phases
-                    returned by ``get_pipe``. Omit to append after existing
-                    phases. Prefer ``1`` or higher for normal layout; ``0``
-                    creates a phase that does not appear in ``get_pipe``'s
-                    ``phases`` list. Index only sets order - it does not
-                    configure Phase Connections / ``allowed_phases`` (UI-only);
-                    call ``get_phase_allowed_move_targets`` before moves.
+                index: Float sort key. A value between two existing keys
+                    inserts between those phases, a tie sorts before the
+                    existing phase, a new pipe's Inbox, Doing and Done keys
+                    are 1, 2 and 3, and 0 omits the phase from ``get_pipe``
+                    phases. ``get_pipe`` does not return this key.
+                    Index only sets order - it does not configure Phase
+                    Connections / ``allowed_phases`` (UI-only); call
+                    ``get_phase_allowed_move_targets`` before moves.
                 description: Optional phase description.
                 debug: When True, append GraphQL codes and correlation_id to errors.
             """
@@ -637,6 +638,9 @@ class PipeConfigTools:
             debug: bool = False,
         ) -> dict[str, Any]:
             """Update a phase.
+
+            ``update_phase`` has no index field. To move a phase that has no
+            cards, delete it and create it again with the sort key.
 
             Pipefy requires the phase name on update. Omit `name` to keep the current
             name (resolved via get_phase_fields). Values identical to the current state
