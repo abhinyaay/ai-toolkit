@@ -60,12 +60,6 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 
 ---
 
-## Attachment uploads
-
-For MCP or CLI one-shot attachment uploads, use `pipefy-attachments`.
-
----
-
 ## Steps — find and update a record
 
 1. **Get table ID** (if not known):

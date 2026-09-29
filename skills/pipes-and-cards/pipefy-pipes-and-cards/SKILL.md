@@ -150,8 +150,6 @@ Read the `type` field description for valid values. The field is an `ID` scalar,
 | `update_comment` | No | Update an existing card comment. |
 | `delete_comment` | No | **Destructive; review and approve first.** |
 
-For MCP or CLI one-shot attachment uploads, use `pipefy-attachments`.
-
 ### Steps — create a card
 
 1. **Get start form fields** (required — never skip):
