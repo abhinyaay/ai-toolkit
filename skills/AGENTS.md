@@ -156,8 +156,10 @@ Skills and tools live in the same monorepo. When a CLI command or MCP tool is re
 
 1. Update the skill reference in the same PR (or a paired PR opened in the same review window).
 2. The `skills-lint.yml` CI job validates frontmatter on every `skills/**/SKILL.md`
-  and lints operation names + `pipefy` CLI references in each entrypoint and its `references/**/*.md` files. A rename that
-   doesn't update the skill fails the build.
+   and lints operation names against each entrypoint's declared SDK/MCP surfaces.
+   MCP references must name MCP tools; CLI references are checked for known
+   operation names and `pipefy` root commands. A rename that doesn't update the
+   skill fails the build.
 
 ---
 
