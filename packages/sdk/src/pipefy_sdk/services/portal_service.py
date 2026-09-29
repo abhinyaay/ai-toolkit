@@ -497,8 +497,7 @@ class PortalService:
         Args:
             page_id: Page UUID (no parent ``interface_uuid`` on this mutation).
             layout: Full row array from ``get_portal`` -> ``pages[].layout``.
-                Each row needs a non-empty id, type ``"row"``, and children as
-                non-empty strings. ``[]`` is an empty page.
+                ``[]`` is an empty page.
         """
         rows = parse_portal_page_layout(layout)
         return await _execute_query_with_portal_errors(
@@ -534,9 +533,7 @@ class PortalService:
             editable: Optional editable flag.
             layout: Optional full page layout row array (``get_portal`` ->
                 ``pages[].layout``) with a row whose children list ``element_id``,
-                to create and place in one call. Each row needs a non-empty id,
-                type ``"row"``, and children as non-empty strings. Omit to leave
-                the grid untouched.
+                to create and place in one call. Omit to leave the grid untouched.
         """
         validated = CreatePortalElementInput.model_validate(
             {

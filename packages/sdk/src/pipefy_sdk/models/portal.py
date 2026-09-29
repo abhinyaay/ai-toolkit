@@ -108,7 +108,7 @@ _LAYOUT_ROW_REQUIREMENT = (
 
 
 class PortalPageLayoutRow(BaseModel):
-    """One ``pages[].layout`` row. Unknown keys stay on the caller's dict."""
+    """One ``pages[].layout`` row."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -122,10 +122,6 @@ def parse_portal_page_layout(layout: list[Any]) -> list[dict[str, Any]]:
 
     An empty list is an empty page. The original dicts are returned so unknown
     keys and key order survive the write.
-
-    Args:
-        layout: Page layout JSON. Each row needs a non-empty id, type ``"row"``,
-            and children as non-empty strings.
     """
     parsed: list[dict[str, Any]] = []
     for index, row in enumerate(layout):
@@ -179,9 +175,8 @@ class CreatePortalElementInput(BaseModel):
     def validate_layout_places_element(self) -> Self:
         """``layout`` must reference the new element, or the write places nothing.
 
-        The Interfaces API stores whatever JSON it receives in ``layout``. A row
-        missing id, type ``"row"``, or string children replaces the grid, and a
-        row array that never lists ``element_id`` leaves the element outside it.
+        The Interfaces API stores whatever JSON it receives in ``layout``; a row
+        array that never lists ``element_id`` leaves the element outside the grid.
         """
         if self.layout is None:
             return self
@@ -232,7 +227,6 @@ __all__ = [
     "CreatePortalElementInput",
     "CreatePortalInput",
     "PortalElementType",
-    "PortalPageLayoutRow",
     "PortalVisibility",
     "UpdatePortalElementInput",
     "UpdatePortalInput",
