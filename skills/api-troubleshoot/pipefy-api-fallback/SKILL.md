@@ -150,7 +150,7 @@ Write operations and `execute_graphql` can report failure even when the mutation
 ## Known workarounds
 
 ### Cross-pipe card creation
-- `createAutomation` with `action: create_card` + `field_map` returns `INTERNAL_SERVER_ERROR` in the reported case. Do not retry that payload unchanged.
+- `createAutomation` with `action: create_card` + `field_map` can return `INTERNAL_SERVER_ERROR` for a cross-pipe target. Do not retry that payload unchanged.
 - For a **one-time** connected card, `createCard` with `throughConnectors` can create the card when a connector field has `canCreateNewConnected: true`.
 - `createCard` does not create an automation rule. If the user needs future cards created automatically, report that the one-time call does not meet that requirement.
 
