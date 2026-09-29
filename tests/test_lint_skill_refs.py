@@ -68,6 +68,13 @@ def test_mcp_only_operation_fails_for_shared_skill(catalog, capsys, monkeypatch)
     assert "operation `mcp_only` missing from SDK" in capsys.readouterr().err
 
 
+def test_sdk_only_operation_fails_for_shared_skill(catalog, capsys):
+    with (catalog / "SKILL.md").open("a") as skill:
+        skill.write("| `sdk_only` | SDK operation |\n")
+    assert _lint.main() == 1
+    assert "unknown MCP tool `sdk_only`" in capsys.readouterr().err
+
+
 def test_mcp_only_operation_passes_for_mcp_skill(catalog, monkeypatch):
     monkeypatch.setattr(
         _lint, "_load_pipefy_tool_names", lambda: frozenset({"get_pipe", "mcp_only"})
