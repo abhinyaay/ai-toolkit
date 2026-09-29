@@ -37,7 +37,7 @@ Full identifier map: [observability identifiers](https://github.com/pipefy/ai-to
 | `get_automation_logs_by_repo` | Yes | Automation logs filtered by pipe. |
 | `get_agents_usage` | Yes | Org-level AI agent execution count and trends. |
 | `get_automations_usage` | Yes | Org-level automation execution stats. |
-| `get_automation_execution_metrics` | Yes | Per-automation execution metrics (totalRuns, success/failure rate, avg duration, lastRun) over a rolling window; partial success returns `partial_errors` for denied ids. |
+| `get_automation_execution_metrics` | Yes | Per-automation execution metrics over `FIFTEEN_MINUTES`, `SIXTY_MINUTES`, `TWELVE_HOURS`, or `TWENTY_FOUR_HOURS`; partial success returns `partial_errors` for denied ids. |
 | `get_ai_credit_usage` | Yes | AI credit consumption and remaining balance. |
 | `export_automation_jobs` | Yes | Trigger async export of automation job history. |
 | `get_automation_jobs_export` | Yes | Poll export job status (after `export_automation_jobs`). |

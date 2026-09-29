@@ -129,7 +129,7 @@ Before `move_card_to_phase`, call `get_phase_allowed_move_targets`. Required emp
 
 `introspect_type type_name="CreatePhaseFieldInput"`
 
-This returns valid `type` enum values and their descriptions.
+Read the `type` field description for valid values. The field is an `ID` scalar, not an enum.
 
 ---
 
@@ -149,7 +149,8 @@ This returns valid `type` enum values and their descriptions.
 | `add_card_comment` | No | Add a text comment to a card. |
 | `update_comment` | No | Update an existing card comment. |
 | `delete_comment` | No | **Destructive; review and approve first.** |
-| `upload_attachment_to_card` | No | Attach a file to an attachment field (`field_id` = slug). See `pipefy-attachments`. |
+
+For MCP or CLI one-shot attachment uploads, use `pipefy-attachments`.
 
 ### Steps — create a card
 

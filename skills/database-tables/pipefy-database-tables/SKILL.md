@@ -62,9 +62,7 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 
 ## Attachment uploads
 
-| Operation | Purpose |
-| ------------ | --------- |
-| `upload_attachment_to_table_record` | Attach a file to a table record. Choose one accessible file source. See `pipefy-attachments`. |
+For MCP or CLI one-shot attachment uploads, use `pipefy-attachments`.
 
 ---
 
@@ -92,7 +90,7 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 
 Before deletion, show the affected data and obtain explicit approval. Preview content per operation:
 
-- **`delete_table`** — show table **name**, **field count**, and **record count**. Deleting a table destroys all rows and schema.
+- **`delete_table`** — show table **name** and **field count**. `get_table` does not return a record count; obtain one through schema-checked GraphQL or by paging through all records if practical. State clearly when the count is unknown. Deleting a table destroys all rows and schema.
 - **`delete_table_record`** — show record **title** and **key field values** so the user can identify which row will vanish.
 - **`delete_table_field`** — show field **name** and **type**; warn explicitly that **all column data will be permanently lost**.
 

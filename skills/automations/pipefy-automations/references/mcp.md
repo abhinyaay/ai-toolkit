@@ -15,5 +15,5 @@ Invalid `field_map` field IDs fail before GraphQL with `success: false` and the 
 For the validated AI automation in the shared workflow, call `create_ai_automation` with `name`, `event_id`, `pipe_id`, `prompt`, and `field_ids`:
 
 ```text
-create_ai_automation name="Summarize intake" event_id="card_created" pipe_id=67890 prompt="Summarize %{900000101} and comment." field_ids=["900000101"]
+create_ai_automation name="Summarize intake" event_id="card_created" pipe_id=67890 prompt="Summarize %{900000102} into the summary field." field_ids=["900000101"]
 ```

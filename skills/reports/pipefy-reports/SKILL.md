@@ -66,13 +66,13 @@ Pipe reports and organization reports: discovery, CRUD, and async exports.
 
    Operation: `export_pipe_report pipe_id=67890 pipe_report_id=123`
 
-3. **Poll until finished:**
+3. **Poll until done:**
 
    Operation: `get_pipe_report_export export_id=<EXPORT_ID>`
 
-   Repeat every 5–10 seconds until the response indicates `finished` (or `failed`).
+   Repeat every 5–10 seconds until `state` is `done` (or `failed`).
 
-4. **Download:** use the signed `fileUrl` from the finished export response over HTTPS (returned in the export payload).
+4. **Download:** use the signed `fileURL` from the `done` export response over HTTPS.
 
 ---
 
@@ -95,7 +95,7 @@ Pipe reports and organization reports: discovery, CRUD, and async exports.
 
 ## Success criteria
 
-- `get_pipe_report_export` (or `get_organization_report_export`) reaches a terminal `finished` or `failed` state.
+- `get_pipe_report_export` (or `get_organization_report_export`) reaches a terminal `done` or `failed` state.
 - Downloaded export contains the expected card/report data.
 
 ## Failure modes
