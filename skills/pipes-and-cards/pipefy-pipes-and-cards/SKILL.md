@@ -44,7 +44,13 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, att
 
    `create_pipe name="Customer Onboarding" organization_id=123`
 
-2. **Add phases** — call `create_phase` for each phase (see Phase section below). `index` is a float sort key: a value between two existing keys inserts between those phases, a tie sorts before the existing phase, a new pipe's Inbox, Doing and Done keys are 1, 2 and 3, and 0 omits the phase from `get_pipe` phases. `get_pipe` does not return this key. Between 2 and 3, use two decimal places (`2.01`, `2.02`, ..., `2.99`): `2.10` is the same float as `2.1`, so the tenth value ties with the first. `index` does not wire Phase Connections / `allowed_phases` (configure those in the Pipefy UI; use `get_phase_allowed_move_targets` before moves).
+2. **Shape the phases.** `create_pipe` already adds Inbox, Doing and Done at keys 1, 2 and 3. Do not call `create_phase` once for every requested name on top of those three.
+
+   When the pipe needs three or more phases and the last one is final, rename Inbox, Doing and Done with `update_phase`. Leave `done` unset on Done so it stays the final phase. Create only the phases that sit between the second and the last, at `2.01`, `2.02`, and so on. When the pipe needs fewer than three phases, delete each empty default you will not keep. `delete_phase` is destructive; review and approve first.
+
+   `index` is a float sort key: a value between two existing keys inserts between those phases, a tie sorts before the existing phase, a new pipe's Inbox, Doing and Done keys are 1, 2 and 3, and 0 omits the phase from `get_pipe` phases. `get_pipe` does not return this key. Between 2 and 3, use two decimal places (`2.01`, `2.02`, ..., `2.99`): `2.10` is the same float as `2.1`, so the tenth value ties with the first. `index` does not wire Phase Connections / `allowed_phases` (configure those in the Pipefy UI; use `get_phase_allowed_move_targets` before moves).
+
+   Call `get_pipe` and confirm the phase names are in the intended order.
 
 3. **Add start form fields** — call `create_phase_field` on the start form phase.
 
