@@ -579,8 +579,9 @@ class PipeConfigTools:
                 name: Phase name.
                 done: When True, marks a final/done phase.
                 index: Float sort key. A value between two existing keys
-                    inserts between those phases, a tie sorts before the
-                    existing phase, a new pipe's Inbox, Doing and Done keys
+                    inserts between those phases. Equal keys have no fixed
+                    order; use a key no other phase has. A new pipe's Inbox,
+                    Doing and Done keys
                     are 1, 2 and 3, and 0 omits the phase from ``get_pipe``
                     phases. ``get_pipe`` does not return this key.
                     Index only sets order - it does not configure Phase
