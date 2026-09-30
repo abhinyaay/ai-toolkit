@@ -5,22 +5,26 @@ on:
     paths:
       - "skills/**"
       - "tests/test_lint_skill_frontmatter.py"
+      - "tests/test_lint_skill_refs.py"
       - "packages/sdk/src/pipefy_sdk/skills/**"
       - "packages/sdk/pyproject.toml"
       - "pyproject.toml"
       - "uv.lock"
       - "packages/mcp/src/pipefy_mcp/tools/registry.py"
+      - "packages/sdk/src/pipefy_sdk/client.py"
       - ".github/workflows/skills-lint.yml"
       - ".github/workflows/scripts/**"
   pull_request:
     paths:
       - "skills/**"
       - "tests/test_lint_skill_frontmatter.py"
+      - "tests/test_lint_skill_refs.py"
       - "packages/sdk/src/pipefy_sdk/skills/**"
       - "packages/sdk/pyproject.toml"
       - "pyproject.toml"
       - "uv.lock"
       - "packages/mcp/src/pipefy_mcp/tools/registry.py"
+      - "packages/sdk/src/pipefy_sdk/client.py"
       - ".github/workflows/skills-lint.yml"
       - ".github/workflows/scripts/**"
 
@@ -49,5 +53,8 @@ jobs:
       - name: Test frontmatter validation
         run: uv run pytest tests/test_lint_skill_frontmatter.py
 
-      - name: Validate MCP and CLI references in skills
+      - name: Validate SDK, MCP, and CLI references in skills
         run: uv run python .github/workflows/scripts/lint_skill_refs.py
+
+      - name: Test operation reference validation
+        run: uv run pytest tests/test_lint_skill_refs.py

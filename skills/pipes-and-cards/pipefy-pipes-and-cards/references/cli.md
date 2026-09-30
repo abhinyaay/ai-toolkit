@@ -70,6 +70,8 @@ CLI: `pipefy phase targets <current_phase_id> --json`
 | `delete_comment` | `pipefy card comment delete` |
 | `upload_attachment_to_card` | `pipefy attachment upload --card` |
 
+Attachment uploads accept `--file` only. See `pipefy-attachments`.
+
 CLI: `pipefy pipe start-form 67890 --json`
 
 CLI:

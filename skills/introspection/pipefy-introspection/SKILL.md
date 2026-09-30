@@ -16,6 +16,8 @@ Schema discovery, organization info, and a fallback executor.
 
 This is **Tier 2** in the resolution strategy: when a dedicated operation fails or doesn't exist, use introspection to understand the API, then `execute_graphql` to run the operation directly.
 
+If a dedicated **write** reports failure, re-read the target before trying a mutation through `execute_graphql`. Continue only when the read shows the write did not land. If the result is inconclusive, report it and stop; a second create can duplicate data.
+
 **Tier 1:** dedicated operation exists — use it.
 **Tier 2:** use introspection + `execute_graphql` (this skill).
 **Tier 3:** direct curl/httpx fallback — see `pipefy-api-fallback`.
@@ -64,7 +66,7 @@ search_schema keyword="automation" kind="INPUT_OBJECT"
 ## When to use introspection
 
 - A dedicated tool returned an error and you need to understand why — introspect the input type to check argument names/types.
-- Before creating fields: `introspect_type('CreatePhaseFieldInput')` to discover valid `type` enum values.
+- Before creating fields: `introspect_type('CreatePhaseFieldInput')` to read the `type` field description. Its type is the `ID` scalar; valid values are listed in the description, not an enum.
 - Before using `extra_input`: introspect the corresponding input type to find optional keys.
 - Unknown mutation signature: `introspect_mutation('createSomething')` before `execute_graphql`.
 - Schema exploration: `search_schema('automation')` to find related types and inputs.
@@ -114,7 +116,7 @@ Ready-to-use patterns for situations where dedicated tools are insufficient.
 introspect_type('CreatePhaseFieldInput')
 ```
 
-Look for the `type` field; it references an enum. Introspect the enum to get all valid values.
+Read the `type` field description for valid values. The field is an `ID` scalar, so there is no enum to introspect.
 
 ### Recipe 2 — Get full behavior config of an AI agent
 

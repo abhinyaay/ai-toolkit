@@ -135,7 +135,7 @@ Use real values from `get_pipe` / `get_start_form_fields` for your org. Placehol
 // "Read %{field:900000102} (title) and %{field:900000103} (description), then fill the category."
 
 // move_card
-{ "destinationPhaseId": "900000201", "pipeId": "", "fieldsAttributes": [] }
+{ "destinationPhaseId": "900000201", "fieldsAttributes": [] }
 
 // create_card
 { "pipeId": "900000301", "fieldsAttributes": [{ "fieldId": "title", "inputMode": "fill_with_ai", "value": "" }] }

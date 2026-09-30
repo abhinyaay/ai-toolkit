@@ -16,6 +16,8 @@ Read the [MCP reference](references/mcp.md) or [CLI reference](references/cli.md
 
 This skill activates only after Tiers 1 and 2 have failed. Call the Pipefy GraphQL API directly, bypassing the toolkit connection.
 
+If a write reports failure, re-read the target before changing tiers or retrying. The mutation may already have applied; follow [Ambiguous write failure](#ambiguous-write-failure-re-read-before-retry).
+
 ---
 
 ## 3-tier resolution strategy (always follow in order)
@@ -147,9 +149,10 @@ Write operations and `execute_graphql` can report failure even when the mutation
 
 ## Known workarounds
 
-### Cross-pipe `create_card` via automation
-- Do NOT use `createAutomation` with `action: create_card` + `field_map` — returns `INTERNAL_SERVER_ERROR` (confirmed API bug).
-- Instead, use `createCard` with the `throughConnectors` parameter. Prerequisite: a connector field with `canCreateNewConnected: true` must exist.
+### Cross-pipe card creation
+- `createAutomation` with `action: create_card` + `field_map` can return `INTERNAL_SERVER_ERROR` for a cross-pipe target. Do not retry that payload unchanged.
+- For a **one-time** connected card, `createCard` with `throughConnectors` can create the card when a connector field has `canCreateNewConnected: true`.
+- `createCard` does not create an automation rule. If the user needs future cards created automatically, report that the one-time call does not meet that requirement.
 
 ### Pipe listing shorter than `pipesCount`
 - `pipesCount` is the org-wide total; `organization { pipes { ... } }` and `search_pipes` return only the pipes the calling identity is a member of. A shorter listing, or an empty one, is expected behavior and not an error. Role does not widen it: a `super_admin` gets the same membership-scoped result. Detail and workarounds: [`docs/mcp/tools/organization.md`](https://github.com/pipefy/ai-toolkit/blob/main/docs/mcp/tools/organization.md#why-counts-disagree).
