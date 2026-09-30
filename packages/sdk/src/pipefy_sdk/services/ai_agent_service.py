@@ -28,9 +28,10 @@ _ACTION_PLACEHOLDER_LINE = re.compile(r"[ \t]*(?:%\{action:[^}]+\}[ \t]*)+")
 
 
 def _drop_action_placeholder_lines(instruction: str) -> str:
-    lines = instruction.split("\n")
     return "\n".join(
-        line for line in lines if not _ACTION_PLACEHOLDER_LINE.fullmatch(line)
+        line
+        for line in instruction.split("\n")
+        if not _ACTION_PLACEHOLDER_LINE.fullmatch(line)
     )
 
 

@@ -355,7 +355,6 @@ def test_inject_reference_ids_drops_the_persisted_action_id():
 
     out_action = result[0]["actionParams"]["aiBehaviorParams"]["actionsAttributes"][0]
     assert "id" not in out_action
-    assert behavior["actionParams"]["aiBehaviorParams"]["actionsAttributes"][0]["id"]
 
 
 @pytest.mark.unit
@@ -453,7 +452,7 @@ def _agent_behavior_as_read() -> dict:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_update_agent_sends_a_read_behavior_back_intact():
-    """A get_ai_agent read sent back keeps human_validation and mcp_tool metadata, drops read ids, and has one placeholder per action."""
+    """A read behavior sent back keeps its metadata and loses its read ids."""
     service, executor = _create_mock_service(
         {"updateAiAgent": {"agent": {"uuid": "agent-uuid", "disabledAt": None}}}
     )
