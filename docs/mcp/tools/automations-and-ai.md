@@ -208,6 +208,8 @@ On **create**, if the caller omits `condition`, the MCP layer supplies `DEFAULT_
 | `create_connected_card` | `{ "pipeId": "<pipe_id>", "fieldsAttributes": [...] }` |
 | `create_table_record` | `{ "tableId": "<table_id>", "fieldsAttributes": [...] }` (`pipeId` not required; MCP does not check table `fieldId` values against the pipe — use `get_table` / `get_table_record`.) |
 | `send_email_template` | `{ "emailTemplateId": "<template_id>" }` (optional: `allowTemplateModifications` boolean; MCP does not verify that the template ID exists.) |
+| `human_validation` | `{ "emails": ["<email>"], "title": "<task title>" }` (the API accepts either key alone and rejects empty `metadata`.) |
+| `mcp_tool` | `{ "mcpServerId": "<server_id>", "toolName": "<tool>", "toolInputs": [...] }` (each input has `name` and `source`: `fixed_value` with `value`, or `card_field` with `fieldId`.) |
 
 Optional inside `actionParams.aiBehaviorParams`:
 

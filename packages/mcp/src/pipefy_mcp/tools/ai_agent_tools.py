@@ -255,6 +255,11 @@ class AiAgentTools:
                 (``pipeId`` not required; field IDs belong to the table.)
               - ``send_email_template`` → ``{"emailTemplateId": "<template_id>"}``;
                 optional ``allowTemplateModifications`` (boolean).
+              - ``human_validation`` → ``{"emails": ["<email>"], "title": "<task title>"}``
+                (either key alone is accepted; empty metadata is rejected).
+              - ``mcp_tool`` → ``{"mcpServerId": "<server_id>", "toolName": "<tool>", "toolInputs": [...]}``
+                (each input has ``name`` and ``source``: ``fixed_value`` with ``value``, or
+                ``card_field`` with ``fieldId``).
 
             Optional ``actionParams.aiBehaviorParams.capabilitiesAttributes`` — a list of
             capability entries, each exactly ``{"capabilityType": "<type>", "enabled": true|false}``
@@ -278,7 +283,7 @@ class AiAgentTools:
             The canonical wire format is camelCase.
 
             Important constraints:
-              - **All-or-nothing save**: the API replaces the entire behaviors list on every call.
+              - **Full-replace save**: the API replaces the entire behaviors list on every call.
                 Always send the complete set (1–5). Omitting a behavior deletes it.
               - **``update_card`` vs ``update_card_field``**: use ``update_card``; the API does
                 not accept ``update_card_field`` as an actionType for AI behaviors.
@@ -380,7 +385,7 @@ class AiAgentTools:
             data_source_ids: list[str] | None = None,
             disabled_at: str | None = None,
         ) -> dict:
-            """Update an AI Agent — replaces the entire config (all-or-nothing save).
+            """Update an AI Agent: replaces the entire config.
 
             Always send the **complete** behaviors list (1–5). Omitting a behavior deletes it.
             Each behavior must include ``actionParams.aiBehaviorParams.actionsAttributes`` with at least
@@ -395,8 +400,13 @@ class AiAgentTools:
             API regardless of preserve (``BehaviorInput.active`` defaults to true).
 
             To modify an existing agent: call ``get_ai_agent`` first, edit the returned config,
-            and send the full payload back. The server replaces ``referenceId`` and appends
-            ``%{action:<uuid>}`` lines to the instruction on each update (same as create flow).
+            and send the full payload back. On every update the SDK drops each action's read-only
+            ``id`` and replaces its ``referenceId`` and the ``%{action:<uuid>}`` lines in each
+            behavior instruction, so the read-back config can be sent as is (same as create flow).
+
+            A rejected save is not rolled back. The API removes the current behaviors before it
+            saves the new list, so a failed update can leave the agent with no behaviors. Keep the
+            ``get_ai_agent`` result, and after a failure read the agent again and resend the full list.
 
             Instruction token aliases are normalized before the API call (same rules as
             ``create_ai_agent``): ``{field:X}`` / ``{action:<uuid>}`` / ``%{<digits>}`` /
@@ -413,6 +423,11 @@ class AiAgentTools:
                 (``pipeId`` not required; field IDs belong to the table.)
               - ``send_email_template`` → ``{"emailTemplateId": "<template_id>"}``;
                 optional ``allowTemplateModifications`` (boolean).
+              - ``human_validation`` → ``{"emails": ["<email>"], "title": "<task title>"}``
+                (either key alone is accepted; empty metadata is rejected).
+              - ``mcp_tool`` → ``{"mcpServerId": "<server_id>", "toolName": "<tool>", "toolInputs": [...]}``
+                (each input has ``name`` and ``source``: ``fixed_value`` with ``value``, or
+                ``card_field`` with ``fieldId``).
 
             ``fill_with_ai`` marks output fields; declare input ``%{field:<internal_id>}`` tokens
             in the behavior ``instruction`` only when the model must read card fields (see
