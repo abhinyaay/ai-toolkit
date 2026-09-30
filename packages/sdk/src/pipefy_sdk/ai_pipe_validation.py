@@ -593,11 +593,11 @@ async def fetch_pipe_validation_context(
         related_pipe_ids = set()
         pipe_relations = relations.get("pipe") or {}
         for rel in pipe_relations.get("childrenRelations") or []:
-            cid = rel.get("child", {}).get("id")
+            cid = ((rel or {}).get("child") or {}).get("id")
             if cid:
                 related_pipe_ids.add(str(cid))
         for rel in pipe_relations.get("parentsRelations") or []:
-            pid = rel.get("parent", {}).get("id")
+            pid = ((rel or {}).get("parent") or {}).get("id")
             if pid:
                 related_pipe_ids.add(str(pid))
     except Exception:  # noqa: BLE001

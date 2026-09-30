@@ -180,6 +180,39 @@ async def test_fetch_pipe_validation_context_reads_get_pipe_relations_payload() 
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+async def test_fetch_pipe_validation_context_skips_null_relation_entries() -> None:
+    # The schema types relation items and their ``child`` / ``parent`` as nullable.
+    client = AsyncMock()
+    client.get_pipe = AsyncMock(
+        return_value={"pipe": {"phases": [], "start_form_fields": []}}
+    )
+    client.get_pipe_relations = AsyncMock(
+        return_value={
+            "pipe": {
+                "id": EXAMPLE_PIPE_ID,
+                "parentsRelations": [
+                    None,
+                    {"id": "rel-1", "parent": None},
+                    {"id": "rel-2", "parent": {"id": "parent-20"}},
+                ],
+                "childrenRelations": [
+                    None,
+                    {"id": "rel-3", "child": None},
+                    {"id": "rel-4", "child": {"id": "child-10"}},
+                ],
+            }
+        }
+    )
+
+    _, _, related_pipe_ids, _ = await fetch_pipe_validation_context(
+        client, EXAMPLE_PIPE_ID, timeout=5
+    )
+
+    assert related_pipe_ids == {"child-10", "parent-20"}
+
+
+@pytest.mark.unit
 def test_validate_behaviors_accepts_internal_id_when_in_pipe_field_set() -> None:
     behavior = {
         "name": "Update briefing",
