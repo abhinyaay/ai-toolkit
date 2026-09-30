@@ -8,7 +8,7 @@ import re
 import sys
 from pathlib import Path
 
-from lint_skill_frontmatter import parse_skill_surfaces
+from pipefy_sdk.skills import parse_skill_surfaces
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
