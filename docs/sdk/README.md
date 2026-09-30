@@ -10,6 +10,18 @@ This tree summarizes how to work with **`pipefy`**: the vendor GraphQL client, s
 
 For a short in-repo overview and dev commands, see **[`../../packages/sdk/README.md`](../../packages/sdk/README.md)**.
 
+## Skills in the package
+
+The `pipefy` wheel includes the versioned skill catalog. After installing the wheel, each skill is available at `<skill-name>/SKILL.md` under the directory returned by `pipefy_sdk.skills.directory()`. Its `references/` files use the same relative paths as the source catalog. Use `parse_skill_surfaces()` to select skills for your client; an omitted `metadata.surfaces` field means SDK, MCP, and CLI all apply.
+
+```python
+from pipefy_sdk import skills
+
+for skill_file in skills.directory().glob("*/SKILL.md"):
+    if "sdk" in skills.parse_skill_surfaces(skill_file.read_text(), skill_file.parent.name):
+        print(skill_file)
+```
+
 ## Errors
 
 `PipefyError` is the root of the API error types. Catch it to handle a failure
