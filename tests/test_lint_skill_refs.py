@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib.util
-import sys
 from pathlib import Path
 
 import pytest
@@ -11,7 +10,6 @@ import pytest
 _SCRIPT = (
     Path(__file__).resolve().parents[1] / ".github/workflows/scripts/lint_skill_refs.py"
 )
-sys.path.insert(0, str(_SCRIPT.parent))
 _spec = importlib.util.spec_from_file_location("lint_skill_refs", _SCRIPT)
 assert _spec and _spec.loader
 _lint = importlib.util.module_from_spec(_spec)
