@@ -209,7 +209,10 @@ def agent_update(
     data_sources: str | None = typer.Option(
         None,
         "--data-sources",
-        help="Optional JSON array of knowledge-source id strings.",
+        help=(
+            "Optional JSON array of knowledge-source id strings. Omit to keep the "
+            "agent's current knowledge bases; pass '[]' to detach them all."
+        ),
     ),
     disabled_at: str | None = typer.Option(
         None,
