@@ -138,7 +138,7 @@ async def test_live_ai_agent_read_update_round_trip_is_lossless(extract_payload)
             async def read(uuid: str) -> dict[str, Any]:
                 body = await call("get_ai_agent", {"uuid": uuid})
                 assert body.get("success") is True, body
-                return (body.get("data") or body)["agent"]
+                return body["data"]["agent"]
 
             pipe = (await call("get_pipe", {"pipe_id": pipe_id}))["pipe"]
             phases = pipe["phases"]
