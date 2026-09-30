@@ -381,6 +381,55 @@ async def test_update_agent_calls_execute_query_with_correct_variables():
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_update_agent_omits_data_source_ids_when_not_passed():
+    """Without data_source_ids the update keeps the agent's knowledge bases."""
+    service, executor = _create_mock_service(
+        side_effect=[
+            {"aiAgent": {"uuid": "agent-uuid", "disabledAt": None}},
+            {"updateAiAgent": {"agent": {"uuid": "agent-uuid", "disabledAt": None}}},
+        ]
+    )
+    inp = UpdateAiAgentInput(
+        uuid="agent-uuid",
+        name="Updated Agent",
+        repo_uuid="repo-456",
+        instruction="Do things",
+        behaviors=[minimal_behavior_dict(name="B1")],
+    )
+
+    await service.update_agent(inp)
+
+    variables = executor.execute_query.call_args_list[1][0][1]
+    assert "dataSourceIds" not in variables["agent"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_update_agent_sends_empty_data_source_ids_when_passed_explicitly():
+    """An explicit empty list still detaches every agent-level knowledge base."""
+    service, executor = _create_mock_service(
+        side_effect=[
+            {"aiAgent": {"uuid": "agent-uuid", "disabledAt": None}},
+            {"updateAiAgent": {"agent": {"uuid": "agent-uuid", "disabledAt": None}}},
+        ]
+    )
+    inp = UpdateAiAgentInput(
+        uuid="agent-uuid",
+        name="Updated Agent",
+        repo_uuid="repo-456",
+        instruction="Do things",
+        behaviors=[minimal_behavior_dict(name="B1")],
+        data_source_ids=[],
+    )
+
+    await service.update_agent(inp)
+
+    variables = executor.execute_query.call_args_list[1][0][1]
+    assert variables["agent"]["dataSourceIds"] == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_update_agent_includes_disabled_at_when_provided():
     """update_agent sends disabledAt in the agent payload when input.disabled_at is set."""
     disabled_at = "2026-08-01T12:00:00Z"

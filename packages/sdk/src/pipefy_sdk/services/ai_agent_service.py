@@ -146,9 +146,10 @@ class AiAgentService:
             "name": agent_input.name,
             "repoUuid": agent_input.repo_uuid,
             "instruction": agent_input.instruction or "",
-            "dataSourceIds": agent_input.data_source_ids,
             "behaviors": behaviors_with_refs,
         }
+        if agent_input.data_source_ids is not None:
+            agent_payload["dataSourceIds"] = agent_input.data_source_ids
         if disabled_at is not None:
             agent_payload["disabledAt"] = disabled_at
 

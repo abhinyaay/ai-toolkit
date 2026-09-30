@@ -330,6 +330,7 @@ def test_agent_update_passes_disabled_at_when_provided(
     update_arg = mock_client.update_ai_agent.call_args.args[0]
     assert update_arg.disabled_at == stub_disabled_at
     assert update_arg.preserve_disabled_at is True
+    assert update_arg.data_source_ids is None
     body = json.loads(r.stdout)
     assert body["disabled_at"] == stub_disabled_at
     assert body["active"] is False

@@ -249,6 +249,9 @@ Usage: pipefy agent update [OPTIONS]
 │                                             [required]                       │
 │    --data-sources                     TEXT  Optional JSON array of           │
 │                                             knowledge-source id strings.     │
+│                                             Omit to keep the agent's current │
+│                                             knowledge bases; pass '[]' to    │
+│                                             detach them all.                 │
 │    --disabled-at                      TEXT  Optional ISO-8601 disabledAt     │
 │                                             from agent get. Pass through to  │
 │                                             skip the preserve re-read; omit  │

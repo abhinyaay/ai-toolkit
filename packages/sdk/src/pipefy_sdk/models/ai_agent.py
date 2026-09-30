@@ -474,6 +474,10 @@ class UpdateAiAgentInput(BaseModel):
     ``disabledAt`` if set (routine update must not clear a disabled agent). When
     False and ``disabled_at`` is None, ``disabledAt`` is omitted from the payload so
     the API can clear a default disabled shell (create-active configure chain).
+
+    When ``data_source_ids`` is None, ``dataSourceIds`` is omitted from the payload,
+    so the update keeps the agent's current knowledge bases. Pass ``[]`` to detach
+    them all.
     """
 
     uuid: NonBlankStr
@@ -481,6 +485,6 @@ class UpdateAiAgentInput(BaseModel):
     repo_uuid: NonBlankStr
     behaviors: _AgentBehaviors
     instruction: _AgentInstruction | None = None
-    data_source_ids: list[str] = Field(default_factory=list)
+    data_source_ids: list[str] | None = None
     disabled_at: NonBlankStr | None = None
     preserve_disabled_at: bool = True
