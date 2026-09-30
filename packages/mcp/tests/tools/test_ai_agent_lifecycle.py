@@ -187,6 +187,7 @@ class TestUpdateAiAgentLifecycle:
         assert isinstance(update_arg, UpdateAiAgentInput)
         assert update_arg.disabled_at is None
         assert update_arg.preserve_disabled_at is True
+        assert update_arg.data_source_ids is None
         payload = extract_payload(result)
         assert payload["success"] is True
         if envelope_flag:
