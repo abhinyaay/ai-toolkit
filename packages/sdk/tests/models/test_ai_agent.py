@@ -358,14 +358,14 @@ def test_update_ai_agent_input_strips_disabled_at_whitespace():
 
 
 @pytest.mark.unit
-def test_update_ai_agent_input_optional_data_source_ids_defaults_empty():
+def test_update_ai_agent_input_optional_data_source_ids_defaults_none():
     inp = UpdateAiAgentInput(
         uuid="agent-123",
         name="My Agent",
         repo_uuid="repo-456",
         behaviors=[_make_behavior()],
     )
-    assert inp.data_source_ids == []
+    assert inp.data_source_ids is None
 
 
 @pytest.mark.unit

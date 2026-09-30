@@ -239,7 +239,7 @@ def agent_update(
     """
     behavior_list = _parse_behaviors_json(behaviors)
     ds_raw = parse_json_value(data_sources, "--data-sources") if data_sources else None
-    data_source_ids: list[str] = []
+    data_source_ids: list[str] | None = None
     if ds_raw is not None:
         if not isinstance(ds_raw, list) or not all(isinstance(x, str) for x in ds_raw):
             raise typer.BadParameter("--data-sources must be a JSON array of strings")
