@@ -52,7 +52,7 @@ pipefy record update 789 --field-id status --value '"Active"'
 ```
 
 ```bash
-pipefy record update 789 --fields '{"status":"Active"}'
+pipefy record update 789 --fields '{"title":"Updated title"}'
 ```
 
 Attachment uploads accept `--file` only. See `pipefy-attachments`.

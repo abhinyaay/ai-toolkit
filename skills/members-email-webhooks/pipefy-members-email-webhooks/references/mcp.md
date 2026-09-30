@@ -23,7 +23,7 @@ get_card_inbox_emails card_id=12345
 ```
 
 ```text
-send_inbox_email card_id=12345 to="customer@example.com" subject="Your request is in progress" body="Hi, we are processing your request."
+send_inbox_email card_id=12345 to='["customer@example.com"]' from_="you@example.com" subject="Your request is in progress" body="Hi, we are processing your request."
 ```
 
 ```text

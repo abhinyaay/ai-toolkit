@@ -74,7 +74,9 @@ When setting up an iPaaS (Advanced Automations) flow that runs under a **service
 
 2. **Send a reply:**
 
-   Operation: `send_inbox_email(card_id=12345, to="customer@example.com", subject="Your request is in progress", body="Hi, we are processing your request.")`
+   Operation: `send_inbox_email(card_id=12345, to=["customer@example.com"], from_="you@example.com", subject="Your request is in progress", body="Hi, we are processing your request.")`
+
+   `to` is a list of addresses, and `from_` (the sender address) is required.
 
 ---
 

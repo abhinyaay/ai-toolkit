@@ -116,15 +116,7 @@ introspect_type('CreatePhaseFieldInput')
 
 Look for the `type` field; it references an enum. Introspect the enum to get all valid values.
 
-### Recipe 2 — Get full behavior config of an AI agent
-
-`get_ai_agent` returns behavior headers only. To inspect the full config (`event_params`, `actionParams`, `actionsAttributes`):
-
-```
-execute_graphql query='query($uuid: ID!) { aiAgent(uuid: $uuid) { uuid name instruction behaviors { id name active event_id event_params { to_phase_id triggerFieldIds fromPhaseId } action_params { aiBehaviorParams { instruction referencedFieldIds actionsAttributes { name actionType referenceId metadata { destinationPhaseId pipeId fieldsAttributes { fieldId inputMode value } } } } } } } }' variables='{"uuid":"<agent-uuid>"}'
-```
-
-### Recipe 3 — Find a card by title (not possible with `find_cards`)
+### Recipe 2 — Find a card by title (not possible with `find_cards`)
 
 `find_cards` only searches custom field values. To search by title:
 
