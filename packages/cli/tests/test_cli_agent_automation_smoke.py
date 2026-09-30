@@ -26,7 +26,7 @@ def test_agent_validate_behaviors_json(
         return_value={"pipe": {"phases": [], "start_form_fields": []}}
     )
     mock_client.get_pipe_relations = AsyncMock(
-        return_value={"children": [], "parents": []}
+        return_value={"pipe": {"childrenRelations": [], "parentsRelations": []}}
     )
     mock_client.get_phase_allowed_move_targets = AsyncMock(
         return_value={"phase": {"cards_can_be_moved_to_phases": []}}

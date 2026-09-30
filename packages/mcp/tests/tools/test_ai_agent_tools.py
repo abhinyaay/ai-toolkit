@@ -612,8 +612,10 @@ class TestUpdateAiAgent:
             field_id=field_id, phase_id="ph-1"
         )
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         behavior = _behavior_update_card_on_pipe(pipe_id=pipe_id, field_id=field_id)
         async with client_session as session:
@@ -646,8 +648,10 @@ class TestUpdateAiAgent:
             field_id="100", phase_id="ph-1"
         )
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         behavior = _behavior_update_card_on_pipe(pipe_id=make_pipe_id(), field_id="999")
         async with client_session as session:
@@ -697,8 +701,10 @@ class TestUpdateAiAgent:
             field_id=field_id, phase_id="ph-1"
         )
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         behavior = _behavior_update_card_on_pipe(pipe_id=pipe_id, field_id="email_slug")
         with patch(
@@ -898,8 +904,10 @@ class TestValidateAiAgentBehaviors:
             field_id=field_id
         )
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         async with client_session as session:
             result = await session.call_tool(
@@ -931,8 +939,10 @@ class TestValidateAiAgentBehaviors:
     ):
         mock_pipefy_client.get_pipe.return_value = _pipe_graph_with_field()
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         behavior = behavior_with_action(
             "create_table_record",
@@ -967,8 +977,10 @@ class TestValidateAiAgentBehaviors:
     ):
         mock_pipefy_client.get_pipe.return_value = _pipe_graph_with_field()
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         behavior = behavior_with_action(
             "send_email_template",
@@ -1044,8 +1056,10 @@ class TestValidateAiAgentBehaviors:
             field_id=field_id
         )
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         async with client_session as session:
             result = await session.call_tool(
@@ -1071,8 +1085,10 @@ class TestValidateAiAgentBehaviors:
 
         mock_pipefy_client.get_pipe.return_value = _pipe_graph_with_field()
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         b = behavior_with_action("custom_future_type", {"x": 1})
         async with client_session as session:
@@ -1680,8 +1696,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             }
         }
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         mock_pipefy_client.get_phase_fields = AsyncMock(return_value={"fields": []})
         behavior = _behavior_update_card_on_pipe(pipe_id="1", field_id="sf-1")
@@ -1714,8 +1732,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             }
         }
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         mock_pipefy_client.get_phase_fields = AsyncMock(return_value={"fields": []})
         behavior = _behavior_update_card_on_pipe(
@@ -1747,8 +1767,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             }
         }
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         mock_pipefy_client.get_phase_allowed_move_targets.return_value = {
             "phase": {
@@ -1797,8 +1819,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             }
         }
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
         mock_pipefy_client.get_phase_allowed_move_targets.return_value = {
             "phase": {
@@ -1967,8 +1991,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             RuntimeError("target pipe fetch failed"),
         ]
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [{"child": {"id": "999"}}],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [{"child": {"id": "999"}}],
+                "parentsRelations": [],
+            }
         }
         behavior = {
             "name": "Cross",
@@ -2019,11 +2045,13 @@ class TestValidateAiAgentBehaviorsErrorPaths:
         )
         mock_pipefy_client.get_pipe.return_value = _pipe_graph_with_field()
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [
-                {"child": {"id": "999"}},
-                {"child": {"id": "888"}},
-            ],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [
+                    {"child": {"id": "999"}},
+                    {"child": {"id": "888"}},
+                ],
+                "parentsRelations": [],
+            }
         }
         b1 = {
             "name": "Cross1",
@@ -2284,8 +2312,10 @@ class TestEnrichWithValidation:
             }
         }
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [{"child": {"id": "child-1"}}],
-            "parents": [{"parent": {"id": "parent-1"}}],
+            "pipe": {
+                "childrenRelations": [{"child": {"id": "child-1"}}],
+                "parentsRelations": [{"parent": {"id": "parent-1"}}],
+            }
         }
         behavior = _behavior_update_card_on_pipe(
             pipe_id=make_pipe_id(), field_id="sf-100"
@@ -2453,8 +2483,10 @@ class TestFetchPipeValidationContext:
 
         mock_pipefy_client.get_pipe.return_value = {"pipe": {}}
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [],
+                "parentsRelations": [],
+            }
         }
 
         (
