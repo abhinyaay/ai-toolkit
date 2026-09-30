@@ -71,6 +71,9 @@ class ToolSuccessPayload(TypedDict, total=False):
     pagination: dict[str, Any]
 
 
+_TOOL_REQUEST_FAILED = "Tool request failed."
+
+
 def tool_error(
     message: str,
     *,
@@ -87,7 +90,7 @@ def tool_error(
         details: Optional structured context (e.g. validation hints), keep JSON-serializable.
     """
     err: dict[str, Any] = {
-        "message": message if message.strip() else "Tool request failed."
+        "message": message if message.strip() else _TOOL_REQUEST_FAILED
     }
     if code is not None:
         err["code"] = code

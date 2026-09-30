@@ -3,6 +3,7 @@
 import pytest
 
 from pipefy_mcp.core.tool_error_envelope import (
+    _TOOL_REQUEST_FAILED,
     tool_error,
     tool_error_message,
 )
@@ -29,7 +30,7 @@ def test_tool_error_blank_message_gets_fallback(message):
     assert tool_error(message, code="UPSTREAM", details={"request_id": "r1"}) == {
         "success": False,
         "error": {
-            "message": "Tool request failed.",
+            "message": _TOOL_REQUEST_FAILED,
             "code": "UPSTREAM",
             "details": {"request_id": "r1"},
         },
@@ -66,7 +67,7 @@ async def test_tool_error_message_survives_mcp_serialization(mode, message):
     assert envelope == {
         "success": False,
         "error": {
-            "message": message if message.strip() else "Tool request failed.",
+            "message": message if message.strip() else _TOOL_REQUEST_FAILED,
             "code": "UPSTREAM_FAILURE",
         },
     }
