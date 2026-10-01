@@ -390,8 +390,8 @@ class PipeConfigTools:
 
             Read-only mirror of Pipefy **Phase -> Connections** (GraphQL
             ``phase.cards_can_be_moved_to_phases``). Call before ``move_card_to_phase``
-            to avoid trial-and-error moves. New phases have no edges until configured
-            in the Pipefy UI.
+            to avoid trial-and-error moves. Transition rules are configured in the
+            Pipefy UI and are not editable via API.
 
             Args:
                 phase_id: Source phase ID (typically the card's ``current_phase.id``).
@@ -575,11 +575,11 @@ class PipeConfigTools:
         ) -> dict[str, Any]:
             """Create a phase in a pipe.
 
-            Creating a phase does not configure its Phase Connections /
-            ``allowed_phases`` (UI-only, not editable via API), so a new phase
-            has no move edges until they are set in the Pipefy UI. Call
-            ``get_phase_allowed_move_targets`` on the source phase before a move.
-            The success payload repeats this as a ``connection_hint`` key.
+            Phase Connections / ``allowed_phases`` (the move-transition rules)
+            are configured in the Pipefy UI and are not editable via API. Call
+            ``get_phase_allowed_move_targets`` on the source phase to read its
+            current move targets before a move. The success payload repeats this
+            as a ``connection_hint`` key.
 
             Args:
                 pipe_id: Pipe that will contain the phase.
