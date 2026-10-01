@@ -49,12 +49,14 @@ VALIDATE_FETCH_TIMEOUT_SECONDS = 30
 _RECORD_NOT_SAVED_PATTERN = "RECORD_NOT_SAVED"
 
 _PAYLOAD_OK_SUFFIX = (
-    "\n\nNote: All behaviors passed structural validation "
-    "(fields, phases, relations, actionTypes are correct). "
-    "The API rejection is likely a pipe-specific restriction "
-    "(orchestration pipe, feature flags, or plan limitation). "
-    "Try the same behaviors on a different pipe to confirm. "
-    "Do NOT retry with modified payload: the issue is the pipe, not the behaviors."
+    "\n\nNote: Pre-flight found no field, phase, relation, or actionType problems. "
+    "RECORD_NOT_SAVED does not name the cause. "
+    "The same message covers an unknown event_id, "
+    "a human_validation action without emails and title, "
+    "and other payload errors. "
+    "Rule those out before you conclude the pipe does not support AI agent behaviors. "
+    "A rejected update is not rolled back. "
+    "Call get_ai_agent to see what is left, fix the payload, and send the full list again."
 )
 
 
@@ -102,9 +104,10 @@ class AiAgentTools:
             """Enrich an error with validation context for RECORD_NOT_SAVED.
 
             When the error matches RECORD_NOT_SAVED, runs
-            ``validate_behaviors_against_pipe`` to distinguish payload problems
-            from pipe-specific restrictions. Falls back to standard enrichment
-            when validation cannot run or for non-RECORD_NOT_SAVED errors.
+            ``validate_behaviors_against_pipe``. Problems found are appended.
+            When none are found, a note says RECORD_NOT_SAVED does not name
+            the cause. Falls back to standard enrichment when validation
+            cannot run or for non-RECORD_NOT_SAVED errors.
             """
             enriched = enrich_behavior_error(exc, behaviors)
 

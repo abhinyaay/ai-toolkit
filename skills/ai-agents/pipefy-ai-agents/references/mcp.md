@@ -4,7 +4,7 @@
 
 `create_ai_agent` / `update_ai_agent` do not auto-preflight. Call `validate_ai_agent_behaviors` before writing. Knowledge-base create/update tools do not auto-probe: call `validate_knowledge_base_access` first.
 
-On a behavior save failure, the MCP tool auto-validates the payload. If structurally correct, `RECORD_NOT_SAVED` indicates a pipe-level restriction rather than a payload problem.
+On a behavior save failure, the MCP tool auto-validates the payload. When pre-flight finds no field, phase, relation, or actionType problems, `RECORD_NOT_SAVED` does not name the cause. The same message covers an unknown `event_id`, a `human_validation` action without `emails` and `title`, and other payload errors. Rule those out before you conclude the pipe does not support AI agent behaviors. A rejected update is not rolled back. Call `get_ai_agent` to see what is left, fix the payload, and send the full list again.
 
 ## Hosted and local profiles
 

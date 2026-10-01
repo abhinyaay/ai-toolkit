@@ -77,7 +77,7 @@ For `card_moved` and `field_updated`, you MUST include `event_params`. Omitting 
 
 ### 4 — Discover valid action types
 
-`get_automation_actions(pipe_id)`. The 8 known `actionType` values and their required `metadata`:
+`get_automation_actions(pipe_id)`. Known `actionType` values and their required `metadata`:
 
 | Action (`actionType` value) | `metadata` required |
 |--------------|---------------------|
@@ -189,12 +189,12 @@ Inside `actionParams.aiBehaviorParams` a behavior may also carry:
 - Output field IDs (`fieldsAttributes[].fieldId`) exist in the pipe
 - Phase IDs exist
 - Pipe relations exist for `create_connected_card`
-- Action types are valid (the 8 in `KNOWN_AI_ACTION_TYPES`; `create_table_record` `fieldsAttributes` are **table** field IDs, so they are not checked against the pipe and surface a warning to verify with `get_table`; `send_email_template` metadata runs no pipe field-ID checks)
+- Action types are valid (`KNOWN_AI_ACTION_TYPES`; `create_table_record` `fieldsAttributes` are **table** field IDs, so they are not checked against the pipe and surface a warning to verify with `get_table`; `send_email_template` metadata runs no pipe field-ID checks)
 - Behavior structure passes Pydantic validation (including canonical `capabilitiesAttributes` shape and at most one of `providerId` / `systemProviderId`)
 - `fieldsAttributes[].fieldId` values (outputs) are checked against start-form and phase fields, accepting both slug `id` and numeric `internal_id`. Instruction `%{field:...}` tokens (inputs) are **not** existence-checked: a missing id/slug still yields `valid: true`. Slug → numeric rewrite happens only on create/update, not here.
 - Pass `data_source_ids` (agent-level) to also check knowledge base membership: it is unioned with each behavior's `dataSourceIds` and checked against the pipe's knowledge bases. Unknown IDs are **warnings only** (`valid` stays true); if the knowledge base list cannot be read, a single warning is added and the check is skipped.
 
-**`strict_unknown_action_types`** (default `true`): an `actionType` outside the known 6 is reported in `problems` (blocking). Set `false` to demote unknown action types to `warnings` only, so `valid` stays true.
+**`strict_unknown_action_types`** (default `true`): an `actionType` outside `KNOWN_AI_ACTION_TYPES` is reported in `problems` (blocking). Set `false` to demote unknown action types to `warnings` only, so `valid` stays true.
 
 ### 7 — Create the agent
 

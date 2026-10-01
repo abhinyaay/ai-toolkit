@@ -597,7 +597,7 @@ class TestUpdateAiAgent:
         assert payload["success"] is False
         assert "error" in payload
 
-    async def test_record_not_saved_with_valid_payload_shows_pipe_restriction(
+    async def test_record_not_saved_with_clean_preflight_does_not_name_the_cause(
         self,
         client_session,
         mock_pipefy_client,
@@ -627,11 +627,51 @@ class TestUpdateAiAgent:
                     "behaviors": [behavior],
                 },
             )
-        payload = extract_payload(result)
-        assert payload["success"] is False
-        assert "RECORD_NOT_SAVED" in tool_error_message(payload)
-        assert "pipe-specific restriction" in tool_error_message(payload)
-        assert "Do NOT retry" in tool_error_message(payload)
+        _assert_record_not_saved_does_not_blame_the_pipe(
+            tool_error_message(extract_payload(result))
+        )
+
+    async def test_record_not_saved_empty_human_validation_does_not_blame_the_pipe(
+        self,
+        client_session,
+        mock_pipefy_client,
+        extract_payload,
+    ):
+        """Empty human_validation metadata must not tell the caller to stop and blame the pipe."""
+        mock_pipefy_client.update_ai_agent.side_effect = PipefyGraphQLError(
+            [{"message": "RECORD_NOT_SAVED"}]
+        )
+        pipe_id = make_pipe_id()
+        field_id = make_field_id()
+        mock_pipefy_client.get_pipe.return_value = _pipe_graph_with_field(
+            field_id=field_id, phase_id="ph-1"
+        )
+        mock_pipefy_client.get_pipe_relations.return_value = {
+            "children": [],
+            "parents": [],
+        }
+        behavior = _behavior_update_card_on_pipe(pipe_id=pipe_id, field_id=field_id)
+        behavior["actionParams"]["aiBehaviorParams"]["actionsAttributes"].append(
+            {
+                "name": "Review",
+                "actionType": "human_validation",
+                "metadata": {},
+            }
+        )
+        async with client_session as session:
+            result = await session.call_tool(
+                "update_ai_agent",
+                {
+                    "uuid": "agent-uuid",
+                    "name": "Agent",
+                    "repo_uuid": "repo-456",
+                    "instruction": "Do things",
+                    "behaviors": [behavior],
+                },
+            )
+        _assert_record_not_saved_does_not_blame_the_pipe(
+            tool_error_message(extract_payload(result))
+        )
 
     async def test_record_not_saved_with_invalid_payload_shows_problems(
         self,
@@ -719,8 +759,7 @@ class TestUpdateAiAgent:
 
         resolve_m.assert_awaited_once()
         msg = tool_error_message(extract_payload(result))
-        assert "RECORD_NOT_SAVED" in msg
-        assert "pipe-specific restriction" in msg
+        _assert_record_not_saved_does_not_blame_the_pipe(msg)
         assert "email_slug" not in msg
 
     async def test_non_record_not_saved_error_uses_standard_enrichment(
@@ -744,7 +783,7 @@ class TestUpdateAiAgent:
         payload = extract_payload(result)
         assert payload["success"] is False
         assert "timeout" in tool_error_message(payload)
-        assert "pipe-specific restriction" not in tool_error_message(payload)
+        assert "does not name the cause" not in tool_error_message(payload)
         mock_pipefy_client.get_pipe.assert_not_called()
 
 
@@ -831,6 +870,13 @@ class TestToggleAiAgentStatus:
         payload = extract_payload(result)
         assert payload["success"] is False
         assert "locked" in tool_error_message(payload)
+
+
+def _assert_record_not_saved_does_not_blame_the_pipe(message):
+    assert "RECORD_NOT_SAVED" in message
+    assert "does not name the cause" in message
+    assert "Do NOT retry" not in message
+    assert "issue is the pipe" not in message
 
 
 def _behavior_update_card_on_pipe(
@@ -2263,9 +2309,8 @@ class TestEnrichWithValidation:
         payload = extract_payload(result)
         assert payload["success"] is False
         assert "RECORD_NOT_SAVED" in tool_error_message(payload)
-        # Falls back to standard enrichment, no validation suffix
         assert "Validation found problems" not in tool_error_message(payload)
-        assert "pipe-specific restriction" not in tool_error_message(payload)
+        assert "does not name the cause" not in tool_error_message(payload)
 
     async def test_record_not_saved_with_start_form_fields_and_relations(
         self,
@@ -2303,9 +2348,7 @@ class TestEnrichWithValidation:
             )
         payload = extract_payload(result)
         assert payload["success"] is False
-        assert "RECORD_NOT_SAVED" in tool_error_message(payload)
-        # sf-100 is valid (in start_form_fields), so payload should pass validation
-        assert "pipe-specific restriction" in tool_error_message(payload)
+        _assert_record_not_saved_does_not_blame_the_pipe(tool_error_message(payload))
 
     async def test_record_not_saved_relations_fetch_fails_still_validates(
         self,
@@ -2337,9 +2380,7 @@ class TestEnrichWithValidation:
             )
         payload = extract_payload(result)
         assert payload["success"] is False
-        assert "RECORD_NOT_SAVED" in tool_error_message(payload)
-        # Field is valid, relations failed, still validates with related_pipe_ids=None
-        assert "pipe-specific restriction" in tool_error_message(payload)
+        _assert_record_not_saved_does_not_blame_the_pipe(tool_error_message(payload))
 
 
 @pytest.mark.anyio
