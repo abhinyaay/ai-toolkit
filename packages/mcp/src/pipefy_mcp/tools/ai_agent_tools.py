@@ -49,12 +49,14 @@ VALIDATE_FETCH_TIMEOUT_SECONDS = 30
 _RECORD_NOT_SAVED_PATTERN = "RECORD_NOT_SAVED"
 
 _PAYLOAD_OK_SUFFIX = (
-    "\n\nNote: All behaviors passed structural validation "
-    "(fields, phases, relations, actionTypes are correct). "
-    "The API rejection is likely a pipe-specific restriction "
-    "(orchestration pipe, feature flags, or plan limitation). "
-    "Try the same behaviors on a different pipe to confirm. "
-    "Do NOT retry with modified payload: the issue is the pipe, not the behaviors."
+    "\n\nNote: Pre-flight found no field, phase, relation, or actionType problems. "
+    "RECORD_NOT_SAVED does not name the cause. "
+    "The same message covers an unknown event_id, "
+    "a human_validation action without emails and title, "
+    "and other payload errors. "
+    "Rule those out before you conclude the pipe does not support AI agent behaviors. "
+    "A rejected update is not rolled back. "
+    "Call get_ai_agent to see what is left, fix the payload, and send the full list again."
 )
 
 
@@ -102,9 +104,10 @@ class AiAgentTools:
             """Enrich an error with validation context for RECORD_NOT_SAVED.
 
             When the error matches RECORD_NOT_SAVED, runs
-            ``validate_behaviors_against_pipe`` to distinguish payload problems
-            from pipe-specific restrictions. Falls back to standard enrichment
-            when validation cannot run or for non-RECORD_NOT_SAVED errors.
+            ``validate_behaviors_against_pipe``. Problems found are appended.
+            When none are found, a note says RECORD_NOT_SAVED does not name
+            the cause. Falls back to standard enrichment when validation
+            cannot run or for non-RECORD_NOT_SAVED errors.
             """
             enriched = enrich_behavior_error(exc, behaviors)
 
@@ -255,6 +258,11 @@ class AiAgentTools:
                 (``pipeId`` not required; field IDs belong to the table.)
               - ``send_email_template`` → ``{"emailTemplateId": "<template_id>"}``;
                 optional ``allowTemplateModifications`` (boolean).
+              - ``human_validation`` → ``{"emails": ["<email>"], "title": "<task title>"}``
+                (either key alone is accepted; empty metadata is rejected).
+              - ``mcp_tool`` → ``{"mcpServerId": "<server_id>", "toolName": "<tool>", "toolInputs": [...]}``
+                (each input has ``name`` and ``source``: ``fixed_value`` with ``value``, or
+                ``card_field`` with ``fieldId``).
 
             Optional ``actionParams.aiBehaviorParams.capabilitiesAttributes`` — a list of
             capability entries, each exactly ``{"capabilityType": "<type>", "enabled": true|false}``
@@ -278,7 +286,7 @@ class AiAgentTools:
             The canonical wire format is camelCase.
 
             Important constraints:
-              - **All-or-nothing save**: the API replaces the entire behaviors list on every call.
+              - **Full-replace save**: the API replaces the entire behaviors list on every call.
                 Always send the complete set (1–5). Omitting a behavior deletes it.
               - **``update_card`` vs ``update_card_field``**: use ``update_card``; the API does
                 not accept ``update_card_field`` as an actionType for AI behaviors.
@@ -380,7 +388,7 @@ class AiAgentTools:
             data_source_ids: list[str] | None = None,
             disabled_at: str | None = None,
         ) -> dict:
-            """Update an AI Agent — replaces the entire config (all-or-nothing save).
+            """Update an AI Agent: replaces the entire config.
 
             Always send the **complete** behaviors list (1–5). Omitting a behavior deletes it.
             Each behavior must include ``actionParams.aiBehaviorParams.actionsAttributes`` with at least
@@ -395,8 +403,13 @@ class AiAgentTools:
             API regardless of preserve (``BehaviorInput.active`` defaults to true).
 
             To modify an existing agent: call ``get_ai_agent`` first, edit the returned config,
-            and send the full payload back. The server replaces ``referenceId`` and appends
-            ``%{action:<uuid>}`` lines to the instruction on each update (same as create flow).
+            and send the full payload back. On every update the SDK drops each action's read-only
+            ``id`` and replaces its ``referenceId`` and the ``%{action:<uuid>}`` lines in each
+            behavior instruction, so the read-back config can be sent as is (same as create flow).
+
+            A rejected save is not rolled back. The API removes the current behaviors before it
+            saves the new list, so a failed update can leave the agent with no behaviors. Keep the
+            ``get_ai_agent`` result, and after a failure read the agent again and resend the full list.
 
             Instruction token aliases are normalized before the API call (same rules as
             ``create_ai_agent``): ``{field:X}`` / ``{action:<uuid>}`` / ``%{<digits>}`` /
@@ -413,6 +426,11 @@ class AiAgentTools:
                 (``pipeId`` not required; field IDs belong to the table.)
               - ``send_email_template`` → ``{"emailTemplateId": "<template_id>"}``;
                 optional ``allowTemplateModifications`` (boolean).
+              - ``human_validation`` → ``{"emails": ["<email>"], "title": "<task title>"}``
+                (either key alone is accepted; empty metadata is rejected).
+              - ``mcp_tool`` → ``{"mcpServerId": "<server_id>", "toolName": "<tool>", "toolInputs": [...]}``
+                (each input has ``name`` and ``source``: ``fixed_value`` with ``value``, or
+                ``card_field`` with ``fieldId``).
 
             ``fill_with_ai`` marks output fields; declare input ``%{field:<internal_id>}`` tokens
             in the behavior ``instruction`` only when the model must read card fields (see

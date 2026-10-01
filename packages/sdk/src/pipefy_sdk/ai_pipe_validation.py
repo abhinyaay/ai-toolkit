@@ -51,6 +51,8 @@ KNOWN_AI_ACTION_TYPES = frozenset(
         "create_card",
         "create_connected_card",
         "create_table_record",
+        "human_validation",
+        "mcp_tool",
         "move_card",
         "send_email_template",
         "update_card",

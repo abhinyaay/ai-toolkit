@@ -54,8 +54,8 @@ Tables, records (rows), schema columns (table fields), and attachments for Pipef
 | `find_records` | Yes | Filter records by `field_id` and `field_value` — preferred over paginating `get_table_records`. |
 | `get_table_record` | Yes | Single record with all populated field values. |
 | `create_table_record` | No | Add a row to a table. |
-| `update_table_record` | No | Update one or more field values on a row. |
-| `set_table_record_field_value` | No | More targeted single-field update than `update_table_record`. |
+| `update_table_record` | No | Update a row's `title`, `due_date` or `status_id`. It accepts no other keys. |
+| `set_table_record_field_value` | No | Set one field value on a row. Use it for every table field. |
 | `delete_table_record` | No | **Destructive; review and approve first.** |
 
 ---

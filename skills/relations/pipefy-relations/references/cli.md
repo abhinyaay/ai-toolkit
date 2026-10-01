@@ -11,7 +11,7 @@
 | `get_table_relations` | `pipefy relation table list --ids <id,...>` |
 | `get_card_relations` | `pipefy relation card list <card_id>` |
 | `create_card_relation` | `pipefy relation card create` |
-| `delete_card_relation` | `pipefy relation card delete <id>` |
+| `delete_card_relation` | `pipefy relation card delete --child <child_card_id> --parent <parent_card_id> --source <pipe_relation_id>` |
 
 ```bash
 pipefy relation pipe list 67890

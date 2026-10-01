@@ -118,15 +118,7 @@ introspect_type('CreatePhaseFieldInput')
 
 Read the `type` field description for valid values. The field is an `ID` scalar, so there is no enum to introspect.
 
-### Recipe 2 — Get full behavior config of an AI agent
-
-`get_ai_agent` returns behavior headers only. To inspect the full config (`event_params`, `actionParams`, `actionsAttributes`):
-
-```
-execute_graphql query='query($uuid: ID!) { aiAgent(uuid: $uuid) { uuid name instruction behaviors { id name active event_id event_params { to_phase_id triggerFieldIds fromPhaseId } action_params { aiBehaviorParams { instruction referencedFieldIds actionsAttributes { name actionType referenceId metadata { destinationPhaseId pipeId fieldsAttributes { fieldId inputMode value } } } } } } } }' variables='{"uuid":"<agent-uuid>"}'
-```
-
-### Recipe 3 — Find a card by title (not possible with `find_cards`)
+### Recipe 2 — Find a card by title (not possible with `find_cards`)
 
 `find_cards` only searches custom field values. To search by title:
 
@@ -136,7 +128,7 @@ execute_graphql query='query($pipeId: ID!, $first: Int) { cards(pipe_id: $pipeId
 
 Filter by title client-side. For large pipes, paginate with `after`.
 
-### Recipe 4 — Discover what `extra_input` accepts for any mutation
+### Recipe 3 — Discover what `extra_input` accepts for any mutation
 
 When a tool accepts `extra_input` (e.g. `create_automation`, `update_label`), discover all optional keys:
 
@@ -147,7 +139,7 @@ introspect_type('CreateAutomationInput')    # see all inputFields
 
 Compare with the tool's primary arguments to know which keys are additive via `extra_input`.
 
-### Recipe 5 — Discover organization IDs
+### Recipe 4 — Discover organization IDs
 
 To answer "which organizations do I have access to?" with nothing in hand, call `list_organizations` — it needs no id and returns each org's `id`, `uuid`, `name`, and your role. That is the entry point; reach for the GraphQL fallbacks below only when you already have a pipe.
 
@@ -157,7 +149,7 @@ When the user only has a pipe ID and needs its `organization_id`:
 execute_graphql query='query($id: ID!) { pipe(id: $id) { organization { id uuid name } } }' variables='{"id":"<pipe-id>"}'
 ```
 
-### Recipe 6 — Update a select field's options after creation
+### Recipe 5 — Update a select field's options after creation
 
 `create_phase_field` does not accept options. Create first, then update.
 
@@ -165,7 +157,7 @@ execute_graphql query='query($id: ID!) { pipe(id: $id) { organization { id uuid 
 execute_graphql query='mutation($id: ID!, $options: [String!]) { updatePhaseField(input: { id: $id, options: $options }) { phase_field { id label options } } }' variables='{"id":"<field-id>","options":["High","Medium","Low"]}'
 ```
 
-### Recipe 7 — Check phase transition rules
+### Recipe 6 — Check phase transition rules
 
 When `move_card_to_phase` fails with "not a valid target phase":
 

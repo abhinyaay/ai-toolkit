@@ -77,7 +77,7 @@ For `card_moved` and `field_updated`, you MUST include `event_params`. Omitting 
 
 ### 4 — Discover valid action types
 
-`get_automation_actions(pipe_id)`. The 6 known `actionType` values and their required `metadata`:
+`get_automation_actions(pipe_id)`. Known `actionType` values and their required `metadata`:
 
 | Action (`actionType` value) | `metadata` required |
 |--------------|---------------------|
@@ -87,6 +87,8 @@ For `card_moved` and `field_updated`, you MUST include `event_params`. Omitting 
 | create_connected_card | `pipeId` + `fieldsAttributes` (requires pipe relation) |
 | create_table_record | `tableId` + `fieldsAttributes` (table field IDs; **no** `pipeId`) |
 | send_email_template | `emailTemplateId`; optional `allowTemplateModifications` (bool) |
+| human_validation | `emails` (recipient list) and `title`. The API accepts either one alone but rejects empty `metadata` |
+| mcp_tool | `mcpServerId` + `toolName`; optional `toolInputs`, each with `name` and `source`: `fixed_value` with a `value`, or `card_field` with a `fieldId` |
 
 `fieldId` values for card actions accept slug or numeric `internal_id`; for `create_table_record` they are **table** field IDs (validate with `get_table` / `get_table_record`, not the pipe).
 
@@ -145,6 +147,12 @@ Use real values from `get_pipe` / `get_start_form_fields` for your org. Placehol
 
 // send_email_template
 { "emailTemplateId": "<template_id>", "allowTemplateModifications": false }
+
+// human_validation
+{ "emails": ["reviewer@example.com"], "title": "Review this card" }
+
+// mcp_tool (mcpServerId is an MCP server registered on the pipe)
+{ "mcpServerId": "<mcp_server_id>", "toolName": "<tool_name>", "toolInputs": [{ "name": "query", "source": "fixed_value", "value": "acme" }, { "name": "email", "source": "card_field", "fieldId": "customer_email" }] }
 ```
 
 ### 5b — Optional: capabilities and LLM provider
@@ -181,12 +189,12 @@ Inside `actionParams.aiBehaviorParams` a behavior may also carry:
 - Output field IDs (`fieldsAttributes[].fieldId`) exist in the pipe
 - Phase IDs exist
 - Pipe relations exist for `create_connected_card`
-- Action types are valid (the 6 in `KNOWN_AI_ACTION_TYPES`; `create_table_record` `fieldsAttributes` are **table** field IDs, so they are not checked against the pipe and surface a warning to verify with `get_table`; `send_email_template` metadata runs no pipe field-ID checks)
+- Action types are valid (`KNOWN_AI_ACTION_TYPES`; `create_table_record` `fieldsAttributes` are **table** field IDs, so they are not checked against the pipe and surface a warning to verify with `get_table`; `send_email_template` metadata runs no pipe field-ID checks)
 - Behavior structure passes Pydantic validation (including canonical `capabilitiesAttributes` shape and at most one of `providerId` / `systemProviderId`)
 - `fieldsAttributes[].fieldId` values (outputs) are checked against start-form and phase fields, accepting both slug `id` and numeric `internal_id`. Instruction `%{field:...}` tokens (inputs) are **not** existence-checked: a missing id/slug still yields `valid: true`. Slug → numeric rewrite happens only on create/update, not here.
 - Pass `data_source_ids` (agent-level) to also check knowledge base membership: it is unioned with each behavior's `dataSourceIds` and checked against the pipe's knowledge bases. Unknown IDs are **warnings only** (`valid` stays true); if the knowledge base list cannot be read, a single warning is added and the check is skipped.
 
-**`strict_unknown_action_types`** (default `true`): an `actionType` outside the known 6 is reported in `problems` (blocking). Set `false` to demote unknown action types to `warnings` only, so `valid` stays true.
+**`strict_unknown_action_types`** (default `true`): an `actionType` outside `KNOWN_AI_ACTION_TYPES` is reported in `problems` (blocking). Set `false` to demote unknown action types to `warnings` only, so `valid` stays true.
 
 ### 7 — Create the agent
 
@@ -315,8 +323,9 @@ Per behavior you can pass `template_params` (or `placeholders`) with `str → st
 
 ## Failure modes
 
-- **`update_ai_agent` is full-replace, not patch.** Fetch existing behaviors with `get_ai_agent` first, merge, then update — otherwise existing behaviors are silently dropped. Update never reactivates a disabled agent — use `toggle_ai_agent_status` for that.
-- **Behavior save is all-or-nothing (`RECORD_NOT_SAVED`).** One invalid behavior rejects the entire list. If the payload is structurally correct, the error indicates a pipe-level restriction. Inform the user this pipe does not support AI agent behaviors and suggest alternatives.
+- **`update_ai_agent` is full-replace, not patch.** Read the agent with `get_ai_agent`, change what you need, and send the complete behaviors list back. A behavior you leave out is deleted. You can send the read behaviors back as they are; the ids and `%{action:…}` lines they carry are replaced on save. Update never reactivates a disabled agent; use `toggle_ai_agent_status` for that.
+- **A rejected update is not rolled back.** Pipefy applies the name and instruction and removes the current behaviors before it saves the new list. When it then rejects the list (`RECORD_NOT_SAVED`), the agent is left with no behaviors, or only part of the new list, and stays enabled. Before `update_ai_agent`, keep the `get_ai_agent` result, run `validate_ai_agent_behaviors`, and check every `event_id` against `get_automation_events`, which the validator does not do. After a failure, call `get_ai_agent` to see what is left, fix the payload, and send the full list again.
+- **`RECORD_NOT_SAVED` does not name the cause.** The same message covers an unknown `event_id`, a `human_validation` action without `emails` and `title`, and other payload errors. Rule those out before you conclude the pipe does not support AI agent behaviors.
 - **Partial-failure recovery.** If `create_ai_agent` returns a UUID but reports failure, call `update_ai_agent(uuid, repo_uuid, name, instruction, behaviors)` — all five are required. Reuse the create `repo_uuid`; send the full behaviors list. Do NOT create a second agent. Update preserves disabled state; use `toggle_ai_agent_status` to change enablement.
 - **Cross-pipe `PERMISSION_DENIED`.** Behaviors with `create_connected_card` or cross-pipe `create_card` require the service account to be a member of **both** source and destination pipes. When it is not, the API returns a bare `PERMISSION_DENIED`. Recovery: `get_pipe_members` + `invite_members` on the destination pipe.
 - **Phase transition rule on `move_card`.** Destination must be reachable from the source phase (`cards_can_be_moved_to_phases`). Both `validate_ai_agent_behaviors` and `create_ai_agent` / `update_ai_agent` enrich this error with `valid_destinations` and a hint that transition rules are editable in the Pipefy UI only.
@@ -329,5 +338,4 @@ Per behavior you can pass `template_params` (or `placeholders`) with `str → st
 
 - `pipefy-automations` — traditional automations and AI automations (different from AI agents).
 - `pipefy-observability` — agent execution logs and credit usage.
-- `pipefy-introspection` — Recipe 2 inspects full behavior config via `execute_graphql`.
 - [docs/mcp/tools/identifiers.md#ai-agents-and-knowledge-bases](https://github.com/pipefy/ai-toolkit/blob/main/docs/mcp/tools/identifiers.md#ai-agents-and-knowledge-bases) — canonical map of which tool/argument expects slug vs `internal_id` vs uuid vs numeric id (AI agents scope by `repo_uuid` = pipe UUID).
