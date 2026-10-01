@@ -25,7 +25,9 @@ def facade_client() -> PipefyClient:
             }
         }
     )
-    client.get_pipe_relations = AsyncMock(return_value={"children": [], "parents": []})
+    client.get_pipe_relations = AsyncMock(
+        return_value={"pipe": {"childrenRelations": [], "parentsRelations": []}}
+    )
     client.get_phase_fields = AsyncMock(return_value={"fields": []})
     client.get_ai_knowledge_bases = AsyncMock(return_value=[{"id": "kb-known"}])
     client.get_pipe_with_preferences = AsyncMock(

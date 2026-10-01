@@ -95,7 +95,9 @@ async def test_fetch_pipe_validation_context_surfaces_phase_fetch_warning() -> N
     client.get_pipe = AsyncMock(
         return_value={"pipe": {"phases": [{"id": "100"}], "start_form_fields": []}}
     )
-    client.get_pipe_relations = AsyncMock(return_value={"children": [], "parents": []})
+    client.get_pipe_relations = AsyncMock(
+        return_value={"pipe": {"childrenRelations": [], "parentsRelations": []}}
+    )
     client.get_phase_fields = AsyncMock(side_effect=RuntimeError("timeout"))
 
     (
@@ -130,7 +132,9 @@ async def test_fetch_pipe_validation_context_excludes_start_form_phase() -> None
             }
         }
     )
-    client.get_pipe_relations = AsyncMock(return_value={"children": [], "parents": []})
+    client.get_pipe_relations = AsyncMock(
+        return_value={"pipe": {"childrenRelations": [], "parentsRelations": []}}
+    )
     client.get_phase_fields = AsyncMock(return_value={"fields": []})
 
     _, phase_ids, _, _ = await fetch_pipe_validation_context(
@@ -210,6 +214,22 @@ async def test_fetch_pipe_validation_context_skips_null_relation_entries() -> No
     )
 
     assert related_pipe_ids == {"child-10", "parent-20"}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_fetch_pipe_validation_context_returns_none_when_relations_fail() -> None:
+    client = AsyncMock()
+    client.get_pipe = AsyncMock(
+        return_value={"pipe": {"phases": [], "start_form_fields": []}}
+    )
+    client.get_pipe_relations = AsyncMock(side_effect=RuntimeError("denied"))
+
+    _, _, related_pipe_ids, _ = await fetch_pipe_validation_context(
+        client, EXAMPLE_PIPE_ID, timeout=5
+    )
+
+    assert related_pipe_ids is None
 
 
 @pytest.mark.unit
