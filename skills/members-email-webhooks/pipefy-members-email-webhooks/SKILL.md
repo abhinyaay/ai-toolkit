@@ -91,6 +91,8 @@ When setting up an iPaaS (Advanced Automations) flow that runs under a **service
 | `update_webhook` | No | Change URL, headers, or events. |
 | `delete_webhook` | No | **Destructive; review and approve first.** |
 
+> **Header values are secrets.** `get_webhooks` returns each webhook's `headers` unmasked, and they usually hold authorization tokens or API keys. In a reply, name only the header keys (for example `Authorization`, `X-Api-Key`), never their values, even when the user asks for them. A lost token comes back from the system that issued it; to replace it, set a new value with `update_webhook`.
+
 ### Steps — create a webhook
 
 1. **List existing webhooks:**
