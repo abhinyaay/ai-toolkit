@@ -249,6 +249,9 @@ Usage: pipefy agent update [OPTIONS]
 │                                             [required]                       │
 │    --data-sources                     TEXT  Optional JSON array of           │
 │                                             knowledge-source id strings.     │
+│                                             Omit to keep the agent's current │
+│                                             knowledge bases; pass '[]' to    │
+│                                             detach them all.                 │
 │    --disabled-at                      TEXT  Optional ISO-8601 disabledAt     │
 │                                             from agent get. Pass through to  │
 │                                             skip the preserve re-read; omit  │
@@ -2580,9 +2583,13 @@ Usage: pipefy phase create [OPTIONS]
 │                                  [required]                                  │
 │ *  --name         -n      TEXT   Phase display name. [required]              │
 │    --done                        Mark as a final/done phase.                 │
-│    --index                FLOAT  1-based insert among workflow phases; omit  │
-│                                  to append. Does not set Connections         │
-│                                  (UI-only).                                  │
+│    --index                FLOAT  Float sort key: a value between two         │
+│                                  existing keys inserts between those phases. │
+│                                  Equal keys have no fixed order; use a key   │
+│                                  no other phase has. A new pipe's Inbox,     │
+│                                  Doing and Done keys are 1, 2 and 3, and 0   │
+│                                  omits the phase from get_pipe phases.       │
+│                                  get_pipe does not return this key.          │
 │    --description  -d      TEXT                                               │
 │    --json         -j                                                         │
 │    --help                        Show this message and exit.                 │
@@ -2635,6 +2642,9 @@ Usage: pipefy phase update [OPTIONS] PHASE_ID
 
  Update a phase (Pipefy ``UpdatePhaseInput``). Resolves current name when
  omitted.
+
+ update_phase has no index field. To move a phase that has no cards, delete it
+ and create it again with the sort key.
 
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    phase_id      TEXT  Phase id. [required]                                │

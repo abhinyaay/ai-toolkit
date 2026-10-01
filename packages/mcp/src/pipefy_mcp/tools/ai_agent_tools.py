@@ -441,7 +441,8 @@ class AiAgentTools:
                     Optional: ``template_params`` / ``placeholders`` and ``instruction_template``
                     (same interpolation as ``create_ai_agent``).
                     Discover via: ``get_automation_events(pipe_id)`` and ``get_phase_fields(phase_id)``.
-                data_source_ids: Optional list of data source IDs.
+                data_source_ids: Optional list of data source IDs. Omit to keep the agent's current
+                    knowledge bases; pass ``[]`` to detach them all.
                 disabled_at: Optional ISO-8601 ``disabledAt`` from ``get_ai_agent``. Pass through to
                     skip the preserve re-read and avoid a toggle race. Omit to let the SDK preserve.
             """
@@ -462,7 +463,7 @@ class AiAgentTools:
                     repo_uuid=repo_uuid,
                     instruction=instruction,
                     behaviors=behaviors,
-                    data_source_ids=data_source_ids or [],
+                    data_source_ids=data_source_ids,
                     disabled_at=disabled_at,
                 )
             except ValidationError as exc:

@@ -156,8 +156,12 @@ def phase_create(
         None,
         "--index",
         help=(
-            "1-based insert among workflow phases; omit to append. "
-            "Does not set Connections (UI-only)."
+            "Float sort key: a value between two existing keys inserts "
+            "between those phases. Equal keys have no fixed order; use a "
+            "key no other phase has. A new pipe's Inbox, Doing and Done keys "
+            "are 1, 2 and 3, "
+            "and 0 omits the phase from get_pipe phases. get_pipe does not "
+            "return this key."
         ),
     ),
     description: str | None = typer.Option(None, "--description", "-d"),
@@ -207,7 +211,11 @@ def phase_update(
     ),
     json_out: bool = typer.Option(False, "--json", "-j"),
 ) -> None:
-    """Update a phase (Pipefy ``UpdatePhaseInput``). Resolves current name when omitted."""
+    """Update a phase (Pipefy ``UpdatePhaseInput``). Resolves current name when omitted.
+
+    update_phase has no index field. To move a phase that has no cards, delete
+    it and create it again with the sort key.
+    """
 
     extra = parse_json_object(extra_json, "--extra")
     update_attrs: dict[str, Any] = {}

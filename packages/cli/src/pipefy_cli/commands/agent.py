@@ -209,7 +209,10 @@ def agent_update(
     data_sources: str | None = typer.Option(
         None,
         "--data-sources",
-        help="Optional JSON array of knowledge-source id strings.",
+        help=(
+            "Optional JSON array of knowledge-source id strings. Omit to keep the "
+            "agent's current knowledge bases; pass '[]' to detach them all."
+        ),
     ),
     disabled_at: str | None = typer.Option(
         None,
@@ -239,7 +242,7 @@ def agent_update(
     """
     behavior_list = _parse_behaviors_json(behaviors)
     ds_raw = parse_json_value(data_sources, "--data-sources") if data_sources else None
-    data_source_ids: list[str] = []
+    data_source_ids: list[str] | None = None
     if ds_raw is not None:
         if not isinstance(ds_raw, list) or not all(isinstance(x, str) for x in ds_raw):
             raise typer.BadParameter("--data-sources must be a JSON array of strings")

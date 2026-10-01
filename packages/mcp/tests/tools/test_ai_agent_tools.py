@@ -1855,8 +1855,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             },
         ]
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [{"child": {"id": "200"}}],
-            "parents": [{"parent": {"id": "300"}}],
+            "pipe": {
+                "childrenRelations": [{"child": {"id": "200"}}],
+                "parentsRelations": [{"parent": {"id": "300"}}],
+            }
         }
         behavior = {
             "name": "Connected",
@@ -1913,8 +1915,10 @@ class TestValidateAiAgentBehaviorsErrorPaths:
             return_value={"fields": [{"id": "tf-1"}]}
         )
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [{"child": {"id": "999"}}],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [{"child": {"id": "999"}}],
+                "parentsRelations": [],
+            }
         }
         behavior = {
             "name": "Cross",
@@ -2090,11 +2094,13 @@ class TestValidateAiAgentBehaviorsErrorPaths:
     ):
         """Cross-pipe fetches run in parallel; responses must map by pipe id, not call order."""
         rel = {
-            "children": [
-                {"child": {"id": "999"}},
-                {"child": {"id": "888"}},
-            ],
-            "parents": [],
+            "pipe": {
+                "childrenRelations": [
+                    {"child": {"id": "999"}},
+                    {"child": {"id": "888"}},
+                ],
+                "parentsRelations": [],
+            }
         }
         main = _pipe_graph_with_field()
         t999 = {
@@ -2370,8 +2376,10 @@ class TestFetchPipeValidationContext:
             }
         }
         mock_pipefy_client.get_pipe_relations.return_value = {
-            "children": [{"child": {"id": "child-10"}}],
-            "parents": [{"parent": {"id": "parent-20"}}],
+            "pipe": {
+                "childrenRelations": [{"child": {"id": "child-10"}}],
+                "parentsRelations": [{"parent": {"id": "parent-20"}}],
+            }
         }
         mock_pipefy_client.get_phase_fields = AsyncMock(
             side_effect=[
