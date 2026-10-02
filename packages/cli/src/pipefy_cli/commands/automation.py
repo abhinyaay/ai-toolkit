@@ -154,7 +154,9 @@ _CONDITION_HELP = (
     '{"expressions": [{"field_address": "<internal_id>", "operation": "equals", '
     '"value": "x", "structure_id": 0}], "expressions_structure": [[0]]}. '
     "field_address is a field internal_id (not a slug); operations include equals, "
-    "not_equals, present, blank, string_contains, number_greater_than, date_is_after."
+    "not_equals, present, blank, string_contains, number_greater_than, date_is_after. "
+    "expressions_structure lists structure_id values: AND inside an inner array, OR "
+    "across inner arrays, so [[0, 1], [2]] is (0 AND 1) OR 2."
 )
 
 
