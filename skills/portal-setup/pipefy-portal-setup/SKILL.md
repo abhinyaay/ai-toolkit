@@ -82,7 +82,7 @@ If **`get_portal`** shows a main page with **no elements**, call **`create_porta
 | **Element metadata** | **`update_portal_element`** is **replace-all** — send the full `metadata` JSON every time. |
 | **Metadata keys** | `forms` → `name` (not `formId`); `link` → `linkName` / `linkUrl` (not `url` / `label`). |
 | **Layout JSON** | **`update_portal_page_layout`** expects an **array** of row objects. Each row needs a non-empty `id`, `type: "row"`, and `children` as non-empty strings. Copy the target **`pages[].layout`** from **`get_portal`**. `metadata.gridMap` gives element dimensions, not placement. The API stores any JSON here verbatim, so a wrapper or an incomplete row replaces the grid. The toolkit rejects a non-array and any incomplete row locally, and still accepts `[]` as an empty page; never bypass it with raw GraphQL. |
-| **Page grid vs elements** | **`create_portal_element`** leaves the layout grid untouched unless you pass `element_id` + `layout` (existing rows plus a row listing the new id); **`duplicate_portal_element`** appends layout rows; **`delete_portal_element`** does not remove layout refs unless you update layout; orphan refs can break the portal viewer (HTTP 500). |
+| **Page grid vs elements** | **`create_portal_element`** leaves the layout grid untouched unless you pass `element_id` + `layout` (existing rows plus a row listing the new id); **`duplicate_portal_element`** appends layout rows; **`delete_portal_element`** leaves layout refs unless you pass `layout` (existing rows with the element removed); orphan refs can break the portal viewer (HTTP 500). |
 
 ---
 
@@ -226,6 +226,8 @@ CLI:
 ```bash
 pipefy portal element create --page-id <page_uuid> --type link --metadata '{...}' --element-id <element_id> --layout '[<existing rows>, {"id": "<row uuid>", "type": "row", "children": ["<element_id>"]}]' --json
 ```
+
+**`delete_portal_element` with pruning:** read `pages[].layout`, remove `element_id` from every row's `children`, and pass the complete array as `layout`. The grid and the element change in one call, so no row is left pointing at a deleted element. A layout that still lists `element_id` is rejected. Re-read and compare. The MCP and CLI references show the delete call with `layout`.
 
 **`sort_portal_pages`:** pass a non-empty `page_ids` list with no duplicates. If the response exposes nested `success: false`, treat the operation as failed.
 

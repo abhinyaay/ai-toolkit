@@ -10,6 +10,7 @@ import pytest
 from _shared.fixture_ids import EXAMPLE_PIPE_REPO_ID
 from pipefy_sdk import PipefyGraphQLError
 from pipefy_sdk.exceptions import PortalPermissionError
+from pipefy_sdk.models.portal import parse_portal_page_layout
 
 from pipefy_cli.main import app
 
@@ -651,7 +652,7 @@ def test_portal_page_layout_update_json(runner, clean_pipefy_env, saved_cwd, oau
     assert result.exit_code == 0, result.stdout + (result.stderr or "")
     assert json.loads(result.stdout) == payload
     mock_client.update_portal_page_layout.assert_awaited_once_with(
-        _PAGE_UUID, _PAGE_LAYOUT
+        _PAGE_UUID, parse_portal_page_layout(_PAGE_LAYOUT)
     )
 
 
@@ -976,6 +977,132 @@ def test_portal_element_delete_with_yes_json(
     mock_client.delete_portal_element.assert_awaited_once_with(
         _ELEMENT_UUID, _PAGE_UUID
     )
+
+
+def test_portal_element_delete_forwards_pruned_layout(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-element-del-layout")
+    pruned = [{"id": "row-1", "type": "row", "children": ["el-other"]}]
+    mock_client = MagicMock()
+    mock_client.delete_portal_element = AsyncMock(
+        return_value={"deleteElement": {"success": True}}
+    )
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "delete",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--layout",
+                json.dumps(pruned),
+                "--yes",
+                "--json",
+            ],
+        )
+    assert result.exit_code == 0, result.stdout + (result.stderr or "")
+    mock_client.delete_portal_element.assert_awaited_once_with(
+        _ELEMENT_UUID, _PAGE_UUID, layout=parse_portal_page_layout(pruned)
+    )
+
+
+def test_portal_element_delete_prompt_names_the_layout_rewrite(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-element-del-layout-prompt")
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "delete",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--layout",
+                "[]",
+            ],
+            input="n\n",
+        )
+    assert result.exit_code == 1
+    assert "replace that page's layout" in result.stdout
+    mock_client.delete_portal_element.assert_not_called()
+
+
+def test_portal_element_delete_rejects_layout_still_listing_element_exit_2(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-element-del-layout-orphan")
+    leftover = [{"id": "row-1", "type": "row", "children": [_ELEMENT_UUID]}]
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "delete",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--layout",
+                json.dumps(leftover),
+                "--yes",
+            ],
+        )
+    assert result.exit_code == 2
+    assert "still lists element_id" in result.stderr
+    mock_client.delete_portal_element.assert_not_called()
+
+
+@pytest.mark.parametrize("raw_layout", ["", "  ", "null"])
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["delete", _ELEMENT_UUID, _PAGE_UUID, "--yes"],
+        [
+            "create",
+            "--page-id",
+            _PAGE_UUID,
+            "--type",
+            "link",
+            "--metadata",
+            json.dumps({"linkName": "Docs"}),
+            "--element-id",
+            "el-new",
+        ],
+    ],
+    ids=["delete", "create"],
+)
+def test_portal_element_given_blank_layout_exit_2(
+    runner, clean_pipefy_env, saved_cwd, oauth_env, command, raw_layout
+):
+    """A layout variable that came out empty must not run the write without a grid."""
+    oauth_env("portal-element-blank-layout")
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app, ["portal", "element", *command, "--layout", raw_layout]
+        )
+    assert result.exit_code == 2
+    assert "JSON array of row objects" in result.stderr
+    mock_client.delete_portal_element.assert_not_called()
+    mock_client.create_portal_element.assert_not_called()
 
 
 def test_portal_element_duplicate_json(runner, clean_pipefy_env, saved_cwd, oauth_env):
@@ -1760,7 +1887,7 @@ def test_portal_element_create_with_layout_places_element(
         metadata=_FORMS_METADATA,
         data_sources=[],
         element_id="el-new",
-        layout=_PLACING_LAYOUT,
+        layout=parse_portal_page_layout(_PLACING_LAYOUT),
     )
 
 

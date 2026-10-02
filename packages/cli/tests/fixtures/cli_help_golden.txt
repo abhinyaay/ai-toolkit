@@ -2862,7 +2862,8 @@ Usage: pipefy portal element [OPTIONS] COMMAND [ARGS]...
 │ create      Create a portal page element, optionally placed via --element-id │
 │             and --layout.                                                    │
 │ update      Update a portal page element (send the full metadata blob).      │
-│ delete      Delete a portal page element permanently.                        │
+│ delete      Delete a portal page element permanently; --layout prunes the    │
+│             page grid too.                                                   │
 │ duplicate   Duplicate a portal page element on the same page (source portal  │
 │             + page UUIDs).                                                   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -2897,16 +2898,20 @@ Usage: pipefy portal element create [OPTIONS]
 ### HELP portal/element/delete
 Usage: pipefy portal element delete [OPTIONS] ELEMENT_ID PAGE_ID
 
- Delete a portal page element permanently.
+ Delete a portal page element permanently; --layout prunes the page grid too.
 
 ╭─ Arguments ──────────────────────────────────────────────────────────────────╮
 │ *    element_id      TEXT  Element UUID. [required]                          │
 │ *    page_id         TEXT  Parent page UUID. [required]                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --yes   -y        Skip interactive confirmation.                             │
-│ --json  -j        Print machine-readable JSON to stdout.                     │
-│ --help            Show this message and exit.                                │
+│ --layout          TEXT  Full page layout row array (get_portal               │
+│                         pages[].layout) with the element removed from every  │
+│                         row, to prune the grid in the same call. Each row    │
+│                         needs a non-empty id, type row, and string children. │
+│ --yes     -y            Skip interactive confirmation.                       │
+│ --json    -j            Print machine-readable JSON to stdout.               │
+│ --help                  Show this message and exit.                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ### HELP portal/element/duplicate

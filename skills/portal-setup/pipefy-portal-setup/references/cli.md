@@ -16,6 +16,12 @@ pipefy portal sub-portal detach <MAIN_PORTAL_UUID> <FORMS_ELEMENT_ID> --yes
 pipefy portal sub-portal delete <SUB_PORTAL_UUID> --yes
 ```
 
+`pipefy portal element delete --layout` prunes the page grid in the same call: pass the read `pages[].layout` with the element removed from every row. A blank or `null` `--layout` exits 2 instead of deleting without the layout.
+
+```bash
+pipefy portal element delete <element_id> <page_uuid> --layout '[<existing rows without element_id>]' --yes --json
+```
+
 CLI `--json` prints the raw SDK payload (no `success` wrapper).
 
 ## Command mapping

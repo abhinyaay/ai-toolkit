@@ -10,7 +10,11 @@ from pipefy_sdk import (
     PipefyClient,
     UpdatePortalElementInput,
 )
-from pipefy_sdk.models.portal import parse_portal_page_layout
+from pipefy_sdk.models.portal import (
+    DeletePortalElementInput,
+    PortalPageLayoutRow,
+    parse_portal_page_layout,
+)
 from pydantic import ValidationError
 
 from pipefy_cli.commands._common import (
@@ -129,13 +133,9 @@ _LAYOUT_ROWS_MESSAGE = (
 )
 
 
-def _parse_layout_rows(
-    raw: str | None, option_name: str
-) -> list[dict[str, Any]] | None:
-    """Parse a page layout row array; ``None`` when the option was not given."""
+def _parse_layout_rows(raw: str, option_name: str) -> list[PortalPageLayoutRow]:
+    """Parse a given page layout row array; blank text and ``null`` are rejected."""
     parsed = parse_json_value(raw, option_name)
-    if parsed is None:
-        return None
     if not isinstance(parsed, list) or not all(isinstance(row, dict) for row in parsed):
         raise typer.BadParameter(_LAYOUT_ROWS_MESSAGE.format(option=option_name))
     try:
@@ -520,12 +520,10 @@ def portal_page_layout_update(
     """Update a portal page grid layout."""
 
     page_id = _require_non_empty_portal_uuid(page_id)
-    layout_obj = _parse_layout_rows(layout, "--layout")
-    if layout_obj is None:
-        raise typer.BadParameter(_LAYOUT_ROWS_MESSAGE.format(option="--layout"))
+    layout_rows = _parse_layout_rows(layout, "--layout")
 
     async def factory(client: PipefyClient):
-        return await client.update_portal_page_layout(page_id, layout_obj)
+        return await client.update_portal_page_layout(page_id, layout_rows)
 
     run_cli_command(ctx, json_out, factory)
 
@@ -578,7 +576,7 @@ def portal_element_create(
     page_id = _require_non_empty_portal_uuid(page_id)
     metadata_obj = _parse_required_metadata_json(metadata, "--metadata")
     data_sources_list = _parse_optional_data_sources_json(data_sources)
-    layout_rows = _parse_layout_rows(layout, "--layout")
+    layout_rows = None if layout is None else _parse_layout_rows(layout, "--layout")
     cleaned_element_id = (
         element_id.strip() if element_id and element_id.strip() else None
     )
@@ -669,6 +667,15 @@ def portal_element_delete(
     ctx: typer.Context,
     element_id: str = resource_id_argument(help="Element UUID."),
     page_id: str = resource_id_argument(help="Parent page UUID."),
+    layout: str | None = typer.Option(
+        None,
+        "--layout",
+        help=(
+            "Full page layout row array (get_portal pages[].layout) with the element "
+            "removed from every row, to prune the grid in the same call. Each row "
+            "needs a non-empty id, type row, and string children."
+        ),
+    ),
     yes: bool = typer.Option(
         False,
         "--yes",
@@ -682,17 +689,25 @@ def portal_element_delete(
         help="Print machine-readable JSON to stdout.",
     ),
 ) -> None:
-    """Delete a portal page element permanently."""
+    """Delete a portal page element permanently; --layout prunes the page grid too."""
 
     element_id = _require_non_empty_portal_uuid(element_id)
     page_id = _require_non_empty_portal_uuid(page_id)
-    confirm_destructive(
-        yes=yes,
-        description=f"element {element_id} on page {page_id}",
-    )
+    layout_rows = None if layout is None else _parse_layout_rows(layout, "--layout")
+    try:
+        validated = DeletePortalElementInput.model_validate(
+            {"element_id": element_id, "page_id": page_id, "layout": layout_rows}
+        )
+    except ValidationError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    description = f"element {element_id} on page {page_id}"
+    if validated.layout is not None:
+        description += " and replace that page's layout"
+    confirm_destructive(yes=yes, description=description)
+    delete_kwargs = {} if validated.layout is None else {"layout": validated.layout}
 
     async def factory(client: PipefyClient):
-        return await client.delete_portal_element(element_id, page_id)
+        return await client.delete_portal_element(element_id, page_id, **delete_kwargs)
 
     run_cli_command(ctx, json_out, factory)
 

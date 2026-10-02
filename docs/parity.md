@@ -80,7 +80,7 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `delete_pipe_report` | `pipefy report-pipe delete` | shipped | Reports domain. MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt. |
 | `delete_portal` | `pipefy portal delete` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt. |
 | `delete_portal_page` | `pipefy portal page delete` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt; positional portal + page UUIDs. |
-| `delete_portal_element` | `pipefy portal element delete` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt; positional element + page UUIDs. |
+| `delete_portal_element` | `pipefy portal element delete` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt; positional element + page UUIDs. Optional `--layout` row array with the element removed prunes the grid in the same call; a row still listing the element is rejected before the call. |
 | `delete_service_account` | `pipefy service-account delete` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt; org + service account UUIDs; revokes the account's credentials. |
 | `delete_sub_portal` | `pipefy portal sub-portal delete` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt; internal_api `deleteSubPortalInterface` (irreversible). |
 | `delete_sub_portal_element` | `pipefy portal sub-portal detach` | shipped | MCP two-step with `confirmation_token`; CLI `--yes` or interactive prompt; internal_api `deleteSubPortalElement` (removes element wiring). |

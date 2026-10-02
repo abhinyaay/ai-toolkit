@@ -13,6 +13,7 @@ from _shared.fixture_ids import EXAMPLE_NUMERIC_ORG_ID, EXAMPLE_PIPE_REPO_ID
 from gql.transport.exceptions import TransportError
 from pipefy_sdk import PipefyClient, PipefyGraphQLError
 from pipefy_sdk.exceptions import PortalPermissionError
+from pipefy_sdk.models.portal import parse_portal_page_layout
 
 from pipefy_mcp.core.tool_error_envelope import tool_error_message
 from pipefy_mcp.tools.portal_tools import PortalTools
@@ -1086,7 +1087,7 @@ async def test_update_portal_page_layout_success(
 
     assert result.is_error is False
     mock_portal_client.update_portal_page_layout.assert_awaited_once_with(
-        _PAGE_UUID, _PAGE_LAYOUT
+        _PAGE_UUID, parse_portal_page_layout(_PAGE_LAYOUT)
     )
     payload = extract_payload(result)
     assert payload["success"] is True
@@ -1154,7 +1155,7 @@ async def test_update_portal_page_layout_fails_when_success_false(
 
     assert result.is_error is False
     mock_portal_client.update_portal_page_layout.assert_awaited_once_with(
-        _PAGE_UUID, _PAGE_LAYOUT
+        _PAGE_UUID, parse_portal_page_layout(_PAGE_LAYOUT)
     )
     payload = extract_payload(result)
     assert payload["success"] is False
@@ -1299,7 +1300,7 @@ async def test_create_portal_element_with_layout_places_element(
         metadata=_PLACING_LINK_METADATA,
         data_sources=[],
         element_id="el-new",
-        layout=_PLACING_LAYOUT,
+        layout=parse_portal_page_layout(_PLACING_LAYOUT),
     )
 
 
@@ -1562,6 +1563,103 @@ async def test_delete_portal_element_fails_when_success_false(
 
     assert payload["success"] is False
     assert "failed to delete" in tool_error_message(payload).lower()
+
+
+_PRUNED_LAYOUT = [{"id": "row-1", "type": "row", "children": ["el-1"]}]
+
+
+@pytest.mark.anyio
+async def test_delete_portal_element_forwards_pruned_layout(
+    portal_session, mock_portal_client
+):
+    mock_portal_client.delete_portal_element = AsyncMock(
+        return_value={"deleteElement": {"success": True}}
+    )
+
+    async with portal_session as session:
+        payload = await confirm_after_preview(
+            session,
+            "delete_portal_element",
+            {
+                "element_id": _ELEMENT_UUID,
+                "page_id": _PAGE_UUID,
+                "layout": _PRUNED_LAYOUT,
+                "confirm": True,
+            },
+        )
+
+    assert payload["success"] is True
+    mock_portal_client.delete_portal_element.assert_awaited_once_with(
+        _ELEMENT_UUID, _PAGE_UUID, layout=parse_portal_page_layout(_PRUNED_LAYOUT)
+    )
+
+
+@pytest.mark.anyio
+async def test_delete_portal_element_preview_names_the_layout_rewrite(
+    portal_session, extract_payload
+):
+    async with portal_session as session:
+        result = await session.call_tool(
+            "delete_portal_element",
+            {"element_id": _ELEMENT_UUID, "page_id": _PAGE_UUID, "layout": []},
+        )
+
+    payload = extract_payload(result)
+    assert payload["requires_confirmation"] is True
+    assert "replacing that page's layout" in payload["resource"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "layout",
+    [
+        [{"id": "row-1", "type": "row", "children": [_ELEMENT_UUID]}],
+        [{"children": []}],
+    ],
+    ids=["still-lists-element", "incomplete-row"],
+)
+async def test_delete_portal_element_rejects_bad_layout_before_preview(
+    portal_session, extract_payload, layout
+):
+    async with portal_session as session:
+        result = await session.call_tool(
+            "delete_portal_element",
+            {"element_id": _ELEMENT_UUID, "page_id": _PAGE_UUID, "layout": layout},
+        )
+
+    payload = extract_payload(result)
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "INVALID_ARGUMENTS"
+    assert "confirmation_token" not in payload
+
+
+@pytest.mark.anyio
+async def test_delete_portal_element_token_without_layout_does_not_confirm_layout(
+    portal_session, mock_portal_client, extract_payload
+):
+    """A token minted without layout must not confirm a delete that rewrites the grid."""
+    async with portal_session as session:
+        preview = extract_payload(
+            await session.call_tool(
+                "delete_portal_element",
+                {"element_id": _ELEMENT_UUID, "page_id": _PAGE_UUID},
+            )
+        )
+        result = await session.call_tool(
+            "delete_portal_element",
+            {
+                "element_id": _ELEMENT_UUID,
+                "page_id": _PAGE_UUID,
+                "layout": _PRUNED_LAYOUT,
+                "confirm": True,
+                "confirmation_token": preview["confirmation_token"],
+            },
+        )
+
+    payload = extract_payload(result)
+    assert payload["requires_confirmation"] is True
+    assert "does not match" in payload["message"]
+    mock_portal_client.delete_portal_element.assert_not_called()
 
 
 @pytest.mark.anyio

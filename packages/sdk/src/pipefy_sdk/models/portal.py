@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    ValidationError,
+    model_validator,
+)
 
 from pipefy_sdk.models.validators import NonBlankStr
 
@@ -117,27 +124,38 @@ class PortalPageLayoutRow(BaseModel):
     children: list[NonBlankStr]
 
 
-def parse_portal_page_layout(layout: list[Any]) -> list[dict[str, Any]]:
-    """Return ``layout`` when every item is a page row.
+def parse_portal_page_layout(layout: list[Any]) -> list[PortalPageLayoutRow]:
+    """Parse ``layout`` into page rows; an empty list is an empty page.
 
-    An empty list is an empty page. The original dicts are returned so unknown
-    keys and key order survive the write.
+    Rows keep keys besides ``id``, ``type``, and ``children`` for the write.
     """
-    parsed: list[dict[str, Any]] = []
+    rows: list[PortalPageLayoutRow] = []
     for index, row in enumerate(layout):
+        if isinstance(row, PortalPageLayoutRow):
+            rows.append(row)
+            continue
         if not isinstance(row, dict):
             raise ValueError(
                 f"layout[{index}] must be an object with {_LAYOUT_ROW_REQUIREMENT}; "
                 f"got {type(row).__name__}."
             )
         try:
-            PortalPageLayoutRow.model_validate(row)
+            rows.append(PortalPageLayoutRow.model_validate(row))
         except ValidationError as exc:
             raise ValueError(
                 f"layout[{index}] must have {_LAYOUT_ROW_REQUIREMENT}; got {row!r}."
             ) from exc
-        parsed.append(row)
-    return parsed
+    return rows
+
+
+def _parse_layout_list(value: object) -> object:
+    """Parse a list with indexed row messages; leave other values to the list check."""
+    return parse_portal_page_layout(value) if isinstance(value, list) else value
+
+
+_PortalPageLayout = Annotated[
+    list[PortalPageLayoutRow], BeforeValidator(_parse_layout_list)
+]
 
 
 class CreatePortalElementInput(BaseModel):
@@ -149,12 +167,12 @@ class CreatePortalElementInput(BaseModel):
     type: PortalElementType
     metadata: dict[str, Any]
     data_sources: list[dict[str, Any]] = Field(default_factory=list)
-    element_id: str | None = Field(
+    element_id: NonBlankStr | None = Field(
         default=None,
         description="Optional client-provided element UUID (GraphQL input id).",
     )
     editable: bool | None = None
-    layout: list[dict[str, Any]] | None = Field(
+    layout: _PortalPageLayout | None = Field(
         default=None,
         description=(
             "Full page layout row array (get_portal pages[].layout) including a row "
@@ -180,20 +198,51 @@ class CreatePortalElementInput(BaseModel):
         """
         if self.layout is None:
             return self
-        self.layout = parse_portal_page_layout(self.layout)
-        element_id = (self.element_id or "").strip()
-        if not element_id:
+        if self.element_id is None:
             raise ValueError(
                 "layout requires element_id: generate a UUID, pass it as element_id, "
                 "and list it in the children of one layout row."
             )
         for row in self.layout:
-            if element_id in row["children"]:
+            if self.element_id in row.children:
                 return self
         raise ValueError(
             "layout must contain a row whose children include element_id; "
             "otherwise the element is created outside the page grid."
         )
+
+
+class DeletePortalElementInput(BaseModel):
+    """Validated input for ``deleteElement`` on the Interfaces schema."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    element_id: NonBlankStr
+    page_id: NonBlankStr
+    layout: _PortalPageLayout | None = Field(
+        default=None,
+        description=(
+            "Full page layout row array (get_portal pages[].layout) with element_id "
+            "removed from every row; omit to leave the page grid untouched."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_layout_drops_element(self) -> Self:
+        """``layout`` must not list the deleted element.
+
+        The API stores ``layout`` verbatim with the delete, so a row that still
+        lists ``element_id`` leaves an orphan reference on the page.
+        """
+        if self.layout is None:
+            return self
+        for index, row in enumerate(self.layout):
+            if self.element_id in row.children:
+                raise ValueError(
+                    f"layout[{index}] still lists element_id {self.element_id!r} in "
+                    "children; remove it so no row references the deleted element."
+                )
+        return self
 
 
 class UpdatePortalElementInput(BaseModel):
@@ -226,7 +275,9 @@ class UpdatePortalElementInput(BaseModel):
 __all__ = [
     "CreatePortalElementInput",
     "CreatePortalInput",
+    "DeletePortalElementInput",
     "PortalElementType",
+    "PortalPageLayoutRow",
     "PortalVisibility",
     "UpdatePortalElementInput",
     "UpdatePortalInput",
