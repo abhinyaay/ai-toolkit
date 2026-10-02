@@ -19,6 +19,7 @@ from pipefy_sdk.models.portal import (
     PortalPageLayoutRow,
     UpdatePortalElementInput,
     UpdatePortalInput,
+    parse_portal_page_layout,
 )
 from pipefy_sdk.queries.portal_internal_queries import (
     DELETE_SUB_PORTAL_ELEMENT_MUTATION,
@@ -496,22 +497,27 @@ class PortalService:
         )
 
     async def update_portal_page_layout(
-        self, page_id: str, layout: list[PortalPageLayoutRow]
+        self, page_id: str, layout: list[PortalPageLayoutRow | dict[str, Any]]
     ) -> dict[str, Any]:
         """Update a portal page grid layout (full layout blob).
 
         Args:
             page_id: Page UUID (no parent ``interface_uuid`` on this mutation).
-            layout: Full row array from ``get_portal`` -> ``pages[].layout``, parsed
-                with ``parse_portal_page_layout``. ``[]`` is an empty page.
+            layout: Full row array from ``get_portal`` -> ``pages[].layout``, as
+                dicts or parsed rows. ``[]`` is an empty page.
+
+        Raises:
+            ValueError: A row lacks a non-empty id, type ``"row"``, or children as
+                non-empty strings.
         """
+        rows = parse_portal_page_layout(layout)
         return await _execute_query_with_portal_errors(
             self.execute_interfaces_query,
             UPDATE_PAGE_LAYOUT_MUTATION,
             {
                 "input": {
                     "page_id": page_id,
-                    "layout": _serialize_layout_rows(layout),
+                    "layout": _serialize_layout_rows(rows),
                 }
             },
         )
@@ -525,7 +531,7 @@ class PortalService:
         data_sources: list[dict[str, Any]] | None = None,
         element_id: str | None = None,
         editable: bool | None = None,
-        layout: list[PortalPageLayoutRow] | None = None,
+        layout: list[PortalPageLayoutRow | dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Create a portal page element on the Interfaces schema.
 
@@ -621,7 +627,7 @@ class PortalService:
         element_id: str,
         page_id: str,
         *,
-        layout: list[PortalPageLayoutRow] | None = None,
+        layout: list[PortalPageLayoutRow | dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Delete a portal page element (irreversible).
 

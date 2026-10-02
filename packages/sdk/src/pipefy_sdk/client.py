@@ -2153,15 +2153,16 @@ class PipefyClient:
         return await self._portal_service.sort_portal_pages(interface_uuid, page_ids)
 
     async def update_portal_page_layout(
-        self, page_id: str, layout: list[PortalPageLayoutRow]
+        self, page_id: str, layout: list[PortalPageLayoutRow | dict[str, Any]]
     ) -> dict[str, Any]:
         """Update a portal page grid layout.
 
         Args:
             page_id: Page UUID.
-            layout: Full row array from ``get_portal`` -> ``pages[].layout``, parsed
-                with ``parse_portal_page_layout`` (non-empty id, type ``"row"``,
-                children as non-empty strings). ``[]`` is an empty page.
+            layout: Full row array from ``get_portal`` -> ``pages[].layout``, as
+                dicts or parsed rows. Each row needs a non-empty id, type
+                ``"row"``, and children as non-empty strings. ``[]`` is an empty
+                page.
         """
         return await self._portal_service.update_portal_page_layout(page_id, layout)
 
@@ -2174,7 +2175,7 @@ class PipefyClient:
         data_sources: list[dict[str, Any]] | None = None,
         element_id: str | None = None,
         editable: bool | None = None,
-        layout: list[PortalPageLayoutRow] | None = None,
+        layout: list[PortalPageLayoutRow | dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Create a portal page element.
 
@@ -2239,7 +2240,7 @@ class PipefyClient:
         element_id: str,
         page_id: str,
         *,
-        layout: list[PortalPageLayoutRow] | None = None,
+        layout: list[PortalPageLayoutRow | dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Delete a portal page element (irreversible).
 
