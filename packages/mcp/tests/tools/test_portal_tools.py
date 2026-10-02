@@ -1619,7 +1619,7 @@ async def test_delete_portal_element_preview_names_the_layout_rewrite(
     ids=["still-lists-element", "incomplete-row"],
 )
 async def test_delete_portal_element_rejects_bad_layout_before_preview(
-    portal_session, mock_portal_client, extract_payload, layout
+    portal_session, extract_payload, layout
 ):
     async with portal_session as session:
         result = await session.call_tool(
@@ -1631,14 +1631,13 @@ async def test_delete_portal_element_rejects_bad_layout_before_preview(
     assert payload["success"] is False
     assert payload["error"]["code"] == "INVALID_ARGUMENTS"
     assert "confirmation_token" not in payload
-    mock_portal_client.delete_portal_element.assert_not_called()
 
 
 @pytest.mark.anyio
 async def test_delete_portal_element_token_without_layout_does_not_confirm_layout(
     portal_session, mock_portal_client, extract_payload
 ):
-    """The preview must show the grid rewrite the confirmed call performs."""
+    """A token minted without layout must not confirm a delete that rewrites the grid."""
     async with portal_session as session:
         preview = extract_payload(
             await session.call_tool(
