@@ -279,7 +279,7 @@ def test_create_portal_element_input_accepts_layout_rows_placing_element() -> No
         element_id=_ELEMENT_ID,
         layout=_LAYOUT_ROWS,
     )
-    assert element_input.layout == _LAYOUT_ROWS
+    assert [row.model_dump() for row in element_input.layout] == _LAYOUT_ROWS
 
 
 @pytest.mark.unit
@@ -373,4 +373,19 @@ def test_create_portal_element_input_keeps_unknown_layout_keys() -> None:
         element_id=_ELEMENT_ID,
         layout=[dict(row)],
     )
-    assert element_input.layout == [row]
+    assert [row.model_dump() for row in element_input.layout] == [row]
+
+
+@pytest.mark.unit
+def test_create_portal_element_input_strips_padded_layout_ids() -> None:
+    """A padded child still places the element, and the row is kept stripped."""
+    element_input = CreatePortalElementInput(
+        page_id=_PAGE_ID,
+        type="link",
+        metadata=_VALID_LINK_METADATA,
+        element_id=_ELEMENT_ID,
+        layout=[{"id": " row-1 ", "type": "row", "children": [f" {_ELEMENT_ID} "]}],
+    )
+    assert [row.model_dump() for row in element_input.layout] == [
+        {"id": "row-1", "type": "row", "children": [_ELEMENT_ID]}
+    ]

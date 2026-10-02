@@ -530,12 +530,12 @@ class PortalTools:
             if err is not None:
                 return err
             try:
-                layout = parse_portal_page_layout(layout)
+                rows = parse_portal_page_layout(layout)
             except ValueError as exc:
                 return tool_error(str(exc), code="INVALID_ARGUMENTS")
             await ctx.debug(f"update_portal_page_layout: page_id={page_id}")
             try:
-                result = await client.update_portal_page_layout(page_id, layout)
+                result = await client.update_portal_page_layout(page_id, rows)
             except Exception as exc:  # noqa: BLE001
                 return build_error_payload(map_portal_error_to_message(exc))
             if result.get("updatePageLayout", {}).get("success"):

@@ -10,6 +10,7 @@ import pytest
 from _shared.fixture_ids import EXAMPLE_PIPE_REPO_ID
 from pipefy_sdk import PipefyGraphQLError
 from pipefy_sdk.exceptions import PortalPermissionError
+from pipefy_sdk.models.portal import parse_portal_page_layout
 
 from pipefy_cli.main import app
 
@@ -651,7 +652,7 @@ def test_portal_page_layout_update_json(runner, clean_pipefy_env, saved_cwd, oau
     assert result.exit_code == 0, result.stdout + (result.stderr or "")
     assert json.loads(result.stdout) == payload
     mock_client.update_portal_page_layout.assert_awaited_once_with(
-        _PAGE_UUID, _PAGE_LAYOUT
+        _PAGE_UUID, parse_portal_page_layout(_PAGE_LAYOUT)
     )
 
 
@@ -1760,7 +1761,7 @@ def test_portal_element_create_with_layout_places_element(
         metadata=_FORMS_METADATA,
         data_sources=[],
         element_id="el-new",
-        layout=_PLACING_LAYOUT,
+        layout=parse_portal_page_layout(_PLACING_LAYOUT),
     )
 
 

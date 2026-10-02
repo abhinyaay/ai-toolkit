@@ -50,6 +50,7 @@ from pipefy_sdk.models.attachment import (
     PresignedUploadTarget,
 )
 from pipefy_sdk.models.knowledge_base import DataLookupCondition
+from pipefy_sdk.models.portal import PortalPageLayoutRow
 from pipefy_sdk.services.advanced_automations_service import AdvancedAutomationsService
 from pipefy_sdk.services.ai_agent_service import AiAgentService
 from pipefy_sdk.services.attachment_service import AttachmentService
@@ -2152,15 +2153,15 @@ class PipefyClient:
         return await self._portal_service.sort_portal_pages(interface_uuid, page_ids)
 
     async def update_portal_page_layout(
-        self, page_id: str, layout: list[dict[str, Any]]
+        self, page_id: str, layout: list[PortalPageLayoutRow]
     ) -> dict[str, Any]:
         """Update a portal page grid layout.
 
         Args:
             page_id: Page UUID.
-            layout: Full row array from ``get_portal`` -> ``pages[].layout``.
-                Each row needs a non-empty id, type ``"row"``, and children as
-                non-empty strings. ``[]`` is an empty page.
+            layout: Full row array from ``get_portal`` -> ``pages[].layout``, parsed
+                with ``parse_portal_page_layout`` (non-empty id, type ``"row"``,
+                children as non-empty strings). ``[]`` is an empty page.
         """
         return await self._portal_service.update_portal_page_layout(page_id, layout)
 
@@ -2173,7 +2174,7 @@ class PipefyClient:
         data_sources: list[dict[str, Any]] | None = None,
         element_id: str | None = None,
         editable: bool | None = None,
-        layout: list[dict[str, Any]] | None = None,
+        layout: list[PortalPageLayoutRow] | None = None,
     ) -> dict[str, Any]:
         """Create a portal page element.
 

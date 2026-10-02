@@ -20,6 +20,7 @@ from pydantic import ValidationError
 
 from pipefy_sdk.exceptions import PortalPermissionError
 from pipefy_sdk.graphql_executor import PipefyGraphQLError
+from pipefy_sdk.models.portal import parse_portal_page_layout
 from pipefy_sdk.queries.observability_queries import RESOLVE_ORGANIZATION_UUID_QUERY
 from pipefy_sdk.queries.portal_queries import GET_PORTAL_QUERY, LIST_PORTALS_QUERY
 from pipefy_sdk.services.portal_service import PortalService
@@ -846,7 +847,9 @@ async def test_update_portal_page_layout_does_not_send_interface_uuid() -> None:
         {"updatePageLayout": {"success": True}},
     )
 
-    result = await service.update_portal_page_layout(_PAGE_ID, layout)
+    result = await service.update_portal_page_layout(
+        _PAGE_ID, parse_portal_page_layout(layout)
+    )
 
     interfaces_executor.execute_query.assert_called_once()
     query_used, variables = interfaces_executor.execute_query.call_args[0]
@@ -885,7 +888,7 @@ async def test_update_portal_page_layout_accepts_row_with_empty_children() -> No
         {"updatePageLayout": {"success": True}},
     )
 
-    await service.update_portal_page_layout(_PAGE_ID, layout)
+    await service.update_portal_page_layout(_PAGE_ID, parse_portal_page_layout(layout))
 
     _, variables = interfaces_executor.execute_query.call_args[0]
     assert variables["input"]["layout"] == expected
@@ -901,7 +904,7 @@ async def test_update_portal_page_layout_keeps_unknown_row_keys() -> None:
         {"updatePageLayout": {"success": True}},
     )
 
-    await service.update_portal_page_layout(_PAGE_ID, layout)
+    await service.update_portal_page_layout(_PAGE_ID, parse_portal_page_layout(layout))
 
     _, variables = interfaces_executor.execute_query.call_args[0]
     assert variables["input"]["layout"] == expected
@@ -909,16 +912,21 @@ async def test_update_portal_page_layout_keeps_unknown_row_keys() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_update_portal_page_layout_rejects_malformed_row_before_query() -> None:
-    """The API stores layout JSON verbatim, so an incomplete row must not be sent."""
+async def test_update_portal_page_layout_sends_ids_stripped() -> None:
+    """The API stores layout verbatim, so a padded id would never match its element."""
+    rows = parse_portal_page_layout(
+        [{"id": " row-1 ", "type": "row", "children": [" el-1 "]}]
+    )
     service, _public, interfaces_executor = _make_interfaces_service(
         {"updatePageLayout": {"success": True}},
     )
 
-    with pytest.raises(ValueError, match="type 'row'"):
-        await service.update_portal_page_layout(_PAGE_ID, [{}])
+    await service.update_portal_page_layout(_PAGE_ID, rows)
 
-    interfaces_executor.execute_query.assert_not_called()
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables["input"]["layout"] == (
+        '[{"id":"row-1","type":"row","children":["el-1"]}]'
+    )
 
 
 @pytest.mark.unit

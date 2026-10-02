@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    ValidationError,
+    model_validator,
+)
 
 from pipefy_sdk.models.validators import NonBlankStr
 
@@ -117,27 +124,38 @@ class PortalPageLayoutRow(BaseModel):
     children: list[NonBlankStr]
 
 
-def parse_portal_page_layout(layout: list[Any]) -> list[dict[str, Any]]:
-    """Return ``layout`` when every item is a page row.
+def parse_portal_page_layout(layout: list[Any]) -> list[PortalPageLayoutRow]:
+    """Parse ``layout`` into page rows; an empty list is an empty page.
 
-    An empty list is an empty page. The original dicts are returned so unknown
-    keys and key order survive the write.
+    Rows keep keys besides ``id``, ``type``, and ``children`` for the write.
     """
-    parsed: list[dict[str, Any]] = []
+    rows: list[PortalPageLayoutRow] = []
     for index, row in enumerate(layout):
+        if isinstance(row, PortalPageLayoutRow):
+            rows.append(row)
+            continue
         if not isinstance(row, dict):
             raise ValueError(
                 f"layout[{index}] must be an object with {_LAYOUT_ROW_REQUIREMENT}; "
                 f"got {type(row).__name__}."
             )
         try:
-            PortalPageLayoutRow.model_validate(row)
+            rows.append(PortalPageLayoutRow.model_validate(row))
         except ValidationError as exc:
             raise ValueError(
                 f"layout[{index}] must have {_LAYOUT_ROW_REQUIREMENT}; got {row!r}."
             ) from exc
-        parsed.append(row)
-    return parsed
+    return rows
+
+
+def _parse_layout_list(value: object) -> object:
+    """Parse a list with indexed row messages; leave other values to the list check."""
+    return parse_portal_page_layout(value) if isinstance(value, list) else value
+
+
+_PortalPageLayout = Annotated[
+    list[PortalPageLayoutRow], BeforeValidator(_parse_layout_list)
+]
 
 
 class CreatePortalElementInput(BaseModel):
@@ -154,7 +172,7 @@ class CreatePortalElementInput(BaseModel):
         description="Optional client-provided element UUID (GraphQL input id).",
     )
     editable: bool | None = None
-    layout: list[dict[str, Any]] | None = Field(
+    layout: _PortalPageLayout | None = Field(
         default=None,
         description=(
             "Full page layout row array (get_portal pages[].layout) including a row "
@@ -180,7 +198,6 @@ class CreatePortalElementInput(BaseModel):
         """
         if self.layout is None:
             return self
-        self.layout = parse_portal_page_layout(self.layout)
         element_id = (self.element_id or "").strip()
         if not element_id:
             raise ValueError(
@@ -188,7 +205,7 @@ class CreatePortalElementInput(BaseModel):
                 "and list it in the children of one layout row."
             )
         for row in self.layout:
-            if element_id in row["children"]:
+            if element_id in row.children:
                 return self
         raise ValueError(
             "layout must contain a row whose children include element_id; "
@@ -227,6 +244,7 @@ __all__ = [
     "CreatePortalElementInput",
     "CreatePortalInput",
     "PortalElementType",
+    "PortalPageLayoutRow",
     "PortalVisibility",
     "UpdatePortalElementInput",
     "UpdatePortalInput",

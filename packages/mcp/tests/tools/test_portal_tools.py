@@ -13,6 +13,7 @@ from _shared.fixture_ids import EXAMPLE_NUMERIC_ORG_ID, EXAMPLE_PIPE_REPO_ID
 from gql.transport.exceptions import TransportError
 from pipefy_sdk import PipefyClient, PipefyGraphQLError
 from pipefy_sdk.exceptions import PortalPermissionError
+from pipefy_sdk.models.portal import parse_portal_page_layout
 
 from pipefy_mcp.core.tool_error_envelope import tool_error_message
 from pipefy_mcp.tools.portal_tools import PortalTools
@@ -1086,7 +1087,7 @@ async def test_update_portal_page_layout_success(
 
     assert result.is_error is False
     mock_portal_client.update_portal_page_layout.assert_awaited_once_with(
-        _PAGE_UUID, _PAGE_LAYOUT
+        _PAGE_UUID, parse_portal_page_layout(_PAGE_LAYOUT)
     )
     payload = extract_payload(result)
     assert payload["success"] is True
@@ -1154,7 +1155,7 @@ async def test_update_portal_page_layout_fails_when_success_false(
 
     assert result.is_error is False
     mock_portal_client.update_portal_page_layout.assert_awaited_once_with(
-        _PAGE_UUID, _PAGE_LAYOUT
+        _PAGE_UUID, parse_portal_page_layout(_PAGE_LAYOUT)
     )
     payload = extract_payload(result)
     assert payload["success"] is False
@@ -1299,7 +1300,7 @@ async def test_create_portal_element_with_layout_places_element(
         metadata=_PLACING_LINK_METADATA,
         data_sources=[],
         element_id="el-new",
-        layout=_PLACING_LAYOUT,
+        layout=parse_portal_page_layout(_PLACING_LAYOUT),
     )
 
 

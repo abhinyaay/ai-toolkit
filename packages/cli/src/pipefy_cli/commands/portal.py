@@ -10,7 +10,7 @@ from pipefy_sdk import (
     PipefyClient,
     UpdatePortalElementInput,
 )
-from pipefy_sdk.models.portal import parse_portal_page_layout
+from pipefy_sdk.models.portal import PortalPageLayoutRow, parse_portal_page_layout
 from pydantic import ValidationError
 
 from pipefy_cli.commands._common import (
@@ -131,7 +131,7 @@ _LAYOUT_ROWS_MESSAGE = (
 
 def _parse_layout_rows(
     raw: str | None, option_name: str
-) -> list[dict[str, Any]] | None:
+) -> list[PortalPageLayoutRow] | None:
     """Parse a page layout row array; ``None`` when the option was not given."""
     parsed = parse_json_value(raw, option_name)
     if parsed is None:
@@ -520,12 +520,12 @@ def portal_page_layout_update(
     """Update a portal page grid layout."""
 
     page_id = _require_non_empty_portal_uuid(page_id)
-    layout_obj = _parse_layout_rows(layout, "--layout")
-    if layout_obj is None:
+    layout_rows = _parse_layout_rows(layout, "--layout")
+    if layout_rows is None:
         raise typer.BadParameter(_LAYOUT_ROWS_MESSAGE.format(option="--layout"))
 
     async def factory(client: PipefyClient):
-        return await client.update_portal_page_layout(page_id, layout_obj)
+        return await client.update_portal_page_layout(page_id, layout_rows)
 
     run_cli_command(ctx, json_out, factory)
 
