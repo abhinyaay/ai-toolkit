@@ -133,8 +133,9 @@ Shape:
 
 - **`field_address`** is the field **`internal_id`** (numeric), **not** the slug. To test a field on a connected card, use the dotted path `<connectorFieldId>.<targetFieldId>`; only the last segment resolves to a field. Discover internal ids via `get_start_form_fields` / `get_phase_fields`.
 - **`operation`** is one of: `equals`, `not_equals`, `present`, `blank`, `string_contains`, `string_not_contains`, `number_greater_than`, `number_less_than`, `date_is_today`, `date_is_yesterday`, `date_in_current_week`, `date_in_last_week`, `date_in_current_month`, `date_in_last_month`, `date_in_current_year`, `date_in_last_year`, `date_is`, `date_is_after`, `date_is_before`. It is a **soft enum**: any string is passed through and the API validates it, so new operations work without an SDK release. Omit `value` for `present` / `blank`.
-- **`structure_id`** labels an expression so `expressions_structure` can reference it.
-- **`expressions_structure`** groups expressions into an AND-of-ORs tree: each inner array is OR'd, and the inner arrays are AND'd together. `[[0, 1], [2]]` means `(expr0 OR expr1) AND expr2`. A single group `[[0, 1]]` is `expr0 OR expr1`; one expression per group `[[0], [1]]` is `expr0 AND expr1`.
+- **`structure_id`** labels an expression so `expressions_structure` can reference it. The numbers in `expressions_structure` are these labels, not positions in `expressions`. Give each expression its own `structure_id`: two expressions that share one are rejected or saved with no expressions at all.
+- **`expressions_structure`** groups expressions into an OR-of-ANDs tree: the expressions in one inner array are AND'd, and the inner arrays are OR'd. `[[0, 1], [2]]` means `(expr0 AND expr1) OR expr2`. A single group `[[0, 1]]` is `expr0 AND expr1`; one expression per group `[[0], [1]]` is `expr0 OR expr1`.
+- **What the API drops on save.** The API removes these without returning an error: a number that matches no `structure_id`, an empty inner array, an expression whose `structure_id` is not listed, and an expression with no `field_address` or no `operation`. Dropping an expression from an inner array makes that group easier to satisfy, so the rule can match more cards than intended; read it back with `get_automation` after a write. An empty `expressions_structure`, including one left empty after the drops, is always true, so the rule fires on every card. A number listed twice makes the API reject the condition with `is invalid`.
 - A `condition` argument **wins** over any `condition` nested in `extra_input`.
 
 ---
@@ -154,7 +155,7 @@ AI automations are separate from traditional rules above. They are prompt-driven
 
 ### `create_ai_automation`: `condition` (contract)
 
-The `condition` shape (expressions, `field_address` = internal_id, `operation` values, and the `expressions_structure` AND-of-ORs grouping) is the shared [Condition contract](#condition-contract-condition) documented above.
+The `condition` shape (expressions, `field_address` = internal_id, `operation` values, and the `expressions_structure` OR-of-ANDs grouping) is the shared [Condition contract](#condition-contract-condition) documented above.
 
 On **create**, if the caller omits `condition`, the MCP layer supplies `DEFAULT_CONDITION` (see `CreateAiAutomationInput` in `pipefy_sdk.models.ai_automation`) so Pipefy always receives an explicit condition object. Pass a `condition` dict to override. On **`update_ai_automation`**, omit `condition` to leave the existing rule unchanged; pass a dict to replace it. Traditional `create_automation` / `update_automation` do **not** inject a default — omit `condition` to leave the rule unconditional.
 

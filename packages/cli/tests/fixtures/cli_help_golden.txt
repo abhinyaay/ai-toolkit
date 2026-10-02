@@ -962,6 +962,13 @@ Usage: pipefy automation create [OPTIONS]
 │                                                      string_contains,        │
 │                                                      number_greater_than,    │
 │                                                      date_is_after.          │
+│                                                      expressions_structure   │
+│                                                      lists structure_id      │
+│                                                      values: AND inside an   │
+│                                                      inner array, OR across  │
+│                                                      inner arrays, so [[0,   │
+│                                                      1], [2]] is (0 AND 1)   │
+│                                                      OR 2.                   │
 │    --extra                                     TEXT  Optional JSON object:   │
 │                                                      extra                   │
 │                                                      CreateAutomationInput   │
@@ -1206,7 +1213,10 @@ Usage: pipefy automation update [OPTIONS] AUTOMATION_ID
 │                            a field internal_id (not a slug); operations      │
 │                            include equals, not_equals, present, blank,       │
 │                            string_contains, number_greater_than,             │
-│                            date_is_after.                                    │
+│                            date_is_after. expressions_structure lists        │
+│                            structure_id values: AND inside an inner array,   │
+│                            OR across inner arrays, so [[0, 1], [2]] is (0    │
+│                            AND 1) OR 2.                                      │
 │ --extra              TEXT  JSON object: UpdateAutomationInput fields to      │
 │                            patch. Top-level keys are snake_case (e.g.        │
 │                            action_params, event_params); camelCase is also   │
