@@ -10,6 +10,7 @@ from _mcp_compat import (
     create_connected_server_and_client_session as create_client_session,
 )
 from pipefy_sdk import PipefyClient, PipefyGraphQLError
+from pipefy_sdk.transition_hints import TRANSITION_RULES_HINT
 
 from pipefy_mcp.core.tool_error_envelope import tool_error, tool_error_message
 from pipefy_mcp.tools.field_condition_tools import FieldConditionTools
@@ -18,6 +19,7 @@ from pipefy_mcp.tools.pipe_config_tool_helpers import (
     DeletePipeErrorPayload,
     build_field_condition_delete_payload,
     build_field_condition_success_payload,
+    build_pipe_mutation_success_payload,
     field_condition_phase_field_id_looks_like_slug,
     normalize_phase_allowed_move_targets,
     normalize_phase_cards_list,
@@ -404,6 +406,59 @@ async def test_update_phase_requires_at_least_one_attr(
         )
     mock_pipe_config_client.update_phase.assert_not_called()
     assert extract_payload(result)["success"] is False
+
+
+@pytest.mark.unit
+def test_build_pipe_mutation_success_payload_connection_hint__no_integration():
+    # Default: no connection_hint key, so existing pipe mutations are unchanged.
+    plain = build_pipe_mutation_success_payload(label="Pipe created.", data={})
+    assert "connection_hint" not in plain
+
+    # Opt-in: the key carries exactly the shared constant, never a second copy.
+    hinted = build_pipe_mutation_success_payload(
+        label="Phase created.", data={}, connection_hint=TRANSITION_RULES_HINT
+    )
+    assert hinted["connection_hint"] == TRANSITION_RULES_HINT
+
+
+@pytest.mark.anyio
+async def test_create_phase_success_carries_connection_hint(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    mock_pipe_config_client.create_phase.return_value = {
+        "createPhase": {"phase": {"id": "10", "name": "Todo", "done": False}},
+    }
+
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "create_phase",
+            {"pipe_id": 1, "name": "Todo"},
+        )
+
+    payload = extract_payload(result)
+    assert payload["success"] is True
+    # Guards the false-done vector: the hint is on the success envelope, and its
+    # text is the shared constant so tool copy and error-path copy cannot drift.
+    assert payload["connection_hint"] == TRANSITION_RULES_HINT
+
+
+@pytest.mark.anyio
+async def test_update_phase_success_carries_connection_hint(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    mock_pipe_config_client.update_phase.return_value = {
+        "updatePhase": {"phase": {"id": "10", "name": "New", "done": False}},
+    }
+
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "update_phase",
+            {"phase_id": 10, "name": "New"},
+        )
+
+    payload = extract_payload(result)
+    assert payload["success"] is True
+    assert payload["connection_hint"] == TRANSITION_RULES_HINT
 
 
 @pytest.mark.anyio
