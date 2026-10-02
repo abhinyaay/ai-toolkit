@@ -74,6 +74,8 @@ Pipe reports and organization reports: discovery, CRUD, and async exports.
 
 4. **Download:** use the signed `fileURL` from the `done` export response over HTTPS.
 
+   The link expires 1 hour after the read that returned it, and anyone holding it can download the file until then. When you hand it to the user, say that it expires in 1 hour; for a fresh link, read the export again.
+
 ---
 
 ## Steps — create a filtered pipe report
