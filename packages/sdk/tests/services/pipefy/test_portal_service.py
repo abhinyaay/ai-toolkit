@@ -1028,6 +1028,29 @@ async def test_create_portal_element_sends_layout_rows_as_interfaces_json() -> N
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_create_portal_element_sends_element_id_matching_its_row() -> None:
+    """The element is stored under the id sent, so it must match the stripped child."""
+    service, _public, interfaces_executor = _make_interfaces_service(
+        _CREATE_ELEMENT_RESPONSE,
+    )
+
+    await service.create_portal_element(
+        _PAGE_ID,
+        type="link",
+        metadata={"linkName": "Docs", "linkUrl": "https://example.com"},
+        element_id=" el-new ",
+        layout=[{"id": "row-1", "type": "row", "children": [" el-new "]}],
+    )
+
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables["input"]["id"] == "el-new"
+    assert variables["input"]["layout"] == (
+        '[{"id":"row-1","type":"row","children":["el-new"]}]'
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_create_portal_element_rejects_malformed_layout_before_query() -> None:
     """createElement.layout replaces the page grid, so a partial row stops locally."""
     service, _public, interfaces_executor = _make_interfaces_service(
