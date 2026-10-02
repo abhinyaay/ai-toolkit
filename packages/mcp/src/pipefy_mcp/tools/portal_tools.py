@@ -9,6 +9,7 @@ from mcp.types import ToolAnnotations
 from pipefy_sdk import PipefyId
 from pipefy_sdk.models.portal import (
     CreatePortalElementInput,
+    DeletePortalElementInput,
     PortalElementType,
     PortalVisibility,
     UpdatePortalElementInput,
@@ -25,6 +26,7 @@ from pipefy_mcp.tools.introspection_tool_helpers import (
 from pipefy_mcp.tools.portal_tool_helpers import (
     finalize_internal_api_mutation,
     map_portal_error_to_message,
+    plan_portal_element_delete_confirmation,
     portal_element_validation_error,
     run_sub_portal_internal_api_tool,
     validate_portal_optional_string,
@@ -711,6 +713,7 @@ class PortalTools:
             ctx: Context,
             element_id: str,
             page_id: str,
+            layout: list[dict[str, Any]] | None = None,
             confirm: bool = False,
             confirmation_token: str | None = None,
         ) -> dict[str, Any]:
@@ -719,9 +722,19 @@ class PortalTools:
             Two-step operation: preview with ``confirm=False`` (default), then echo
             ``confirmation_token`` from the preview on step 2.
 
+            Without ``layout`` the page grid keeps any row reference to the deleted
+            element, and an orphan reference can break the portal viewer (HTTP
+            500). Read ``get_portal`` -> ``pages[].layout``, remove ``element_id``
+            from every row's ``children``, and pass the complete array as
+            ``layout`` to prune the grid in the same call. Re-read after.
+
             Args:
                 element_id: Element UUID to delete.
                 page_id: Parent page UUID.
+                layout: Optional full page layout row array with ``element_id``
+                    removed. Each row needs a non-empty id, type "row", and
+                    children as non-empty strings; a row still listing
+                    ``element_id`` is rejected. Send the same rows on both steps.
                 confirm: Set to True with the preview token to execute the deletion (step 2).
                 confirmation_token: Token from the preview response.
             """
@@ -732,24 +745,34 @@ class PortalTools:
             page_id, err = validate_tool_id(page_id, "page_id")
             if err is not None:
                 return err
+            try:
+                validated = DeletePortalElementInput.model_validate(
+                    {"element_id": element_id, "page_id": page_id, "layout": layout}
+                )
+            except ValidationError as exc:
+                return portal_element_validation_error(exc)
             await ctx.debug(
                 f"delete_portal_element: element_id={element_id}, page_id={page_id}"
             )
+            confirmation = plan_portal_element_delete_confirmation(validated)
             guard = await check_destructive_confirmation(
                 ctx,
                 confirm=confirm,
-                resource_descriptor=(
-                    f"portal element (UUID: {element_id}) on page (UUID: {page_id})"
-                ),
-                resource_identity={"element_id": element_id, "page_id": page_id},
+                resource_descriptor=confirmation.resource_descriptor,
+                resource_identity=confirmation.resource_identity,
                 tool_name="delete_portal_element",
                 confirmation_token=confirmation_token,
             )
             if guard is not None:
                 return guard
 
+            delete_kwargs: dict[str, Any] = {}
+            if validated.layout is not None:
+                delete_kwargs["layout"] = validated.layout
             try:
-                result = await client.delete_portal_element(element_id, page_id)
+                result = await client.delete_portal_element(
+                    validated.element_id, validated.page_id, **delete_kwargs
+                )
             except Exception as exc:  # noqa: BLE001
                 return build_error_payload(map_portal_error_to_message(exc))
 

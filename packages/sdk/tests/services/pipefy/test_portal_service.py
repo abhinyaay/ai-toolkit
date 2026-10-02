@@ -1252,6 +1252,46 @@ async def test_delete_portal_element_calls_delete_element_with_ids() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_delete_portal_element_sends_pruned_layout_in_the_same_call() -> None:
+    """deleteElement takes the pruned grid, so no orphan row outlives the element."""
+    pruned = [{"id": "row-1", "type": "row", "children": ["el-other"], "minHeight": 2}]
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"deleteElement": {"success": True}},
+    )
+
+    await service.delete_portal_element(
+        _ELEMENT_ID, _PAGE_ID, layout=parse_portal_page_layout(pruned)
+    )
+
+    interfaces_executor.execute_query.assert_called_once()
+    _, variables = interfaces_executor.execute_query.call_args[0]
+    assert variables == {
+        "input": {
+            "element_id": _ELEMENT_ID,
+            "page_id": _PAGE_ID,
+            "layout": json.dumps(pruned, separators=(",", ":"), ensure_ascii=False),
+        },
+    }
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_delete_portal_element_rejects_layout_listing_the_element() -> None:
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"deleteElement": {"success": True}},
+    )
+    layout = parse_portal_page_layout(
+        [{"id": "row-1", "type": "row", "children": [_ELEMENT_ID]}]
+    )
+
+    with pytest.raises(ValidationError, match="still lists element_id"):
+        await service.delete_portal_element(_ELEMENT_ID, _PAGE_ID, layout=layout)
+
+    interfaces_executor.execute_query.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_duplicate_portal_element_sends_camel_case_duplicate_input() -> None:
     """duplicateElement input uses elementUuid, interfaceUuid, pageUuid (camelCase)."""
     dup_response = {

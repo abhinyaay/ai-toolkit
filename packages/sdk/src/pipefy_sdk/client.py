@@ -2235,15 +2235,24 @@ class PipefyClient:
         )
 
     async def delete_portal_element(
-        self, element_id: str, page_id: str
+        self,
+        element_id: str,
+        page_id: str,
+        *,
+        layout: list[PortalPageLayoutRow] | None = None,
     ) -> dict[str, Any]:
         """Delete a portal page element (irreversible).
 
         Args:
             element_id: Element UUID.
             page_id: Parent page UUID.
+            layout: Optional full page layout row array (``get_portal`` ->
+                ``pages[].layout``) with ``element_id`` removed from every row,
+                written in the same call. Omit to leave the grid untouched.
         """
-        return await self._portal_service.delete_portal_element(element_id, page_id)
+        return await self._portal_service.delete_portal_element(
+            element_id, page_id, layout=layout
+        )
 
     async def duplicate_portal_element(
         self,

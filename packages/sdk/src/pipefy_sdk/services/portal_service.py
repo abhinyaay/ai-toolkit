@@ -14,6 +14,7 @@ from pipefy_sdk.graphql_problem import GraphQLProblemKind, classify_exception
 from pipefy_sdk.models.portal import (
     CreatePortalElementInput,
     CreatePortalInput,
+    DeletePortalElementInput,
     PortalElementType,
     PortalPageLayoutRow,
     UpdatePortalElementInput,
@@ -616,18 +617,34 @@ class PortalService:
         )
 
     async def delete_portal_element(
-        self, element_id: str, page_id: str
+        self,
+        element_id: str,
+        page_id: str,
+        *,
+        layout: list[PortalPageLayoutRow] | None = None,
     ) -> dict[str, Any]:
         """Delete a portal page element (irreversible).
 
         Args:
             element_id: Element UUID.
             page_id: Parent page UUID.
+            layout: Optional full page layout row array with ``element_id`` removed
+                from every row, written in the same call so no row is left
+                pointing at the deleted element. Omit to leave the grid untouched.
         """
+        validated = DeletePortalElementInput.model_validate(
+            {"element_id": element_id, "page_id": page_id, "layout": layout}
+        )
+        variables: dict[str, Any] = {
+            "element_id": validated.element_id,
+            "page_id": validated.page_id,
+        }
+        if validated.layout is not None:
+            variables["layout"] = _serialize_layout_rows(validated.layout)
         return await _execute_query_with_portal_errors(
             self.execute_interfaces_query,
             DELETE_ELEMENT_MUTATION,
-            {"input": {"element_id": element_id, "page_id": page_id}},
+            {"input": variables},
         )
 
     async def duplicate_portal_element(

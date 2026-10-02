@@ -213,6 +213,39 @@ class CreatePortalElementInput(BaseModel):
         )
 
 
+class DeletePortalElementInput(BaseModel):
+    """Validated input for ``deleteElement`` on the Interfaces schema."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    element_id: NonBlankStr
+    page_id: NonBlankStr
+    layout: _PortalPageLayout | None = Field(
+        default=None,
+        description=(
+            "Full page layout row array (get_portal pages[].layout) with element_id "
+            "removed from every row; omit to leave the page grid untouched."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_layout_drops_element(self) -> Self:
+        """``layout`` must not list the deleted element.
+
+        The API stores ``layout`` verbatim with the delete, so a row that still
+        lists ``element_id`` leaves an orphan reference on the page.
+        """
+        if self.layout is None:
+            return self
+        for index, row in enumerate(self.layout):
+            if self.element_id in row.children:
+                raise ValueError(
+                    f"layout[{index}] still lists element_id {self.element_id!r} in "
+                    "children; remove it so no row references the deleted element."
+                )
+        return self
+
+
 class UpdatePortalElementInput(BaseModel):
     """Validated input for ``updateElement`` (Interfaces schema).
 
@@ -243,6 +276,7 @@ class UpdatePortalElementInput(BaseModel):
 __all__ = [
     "CreatePortalElementInput",
     "CreatePortalInput",
+    "DeletePortalElementInput",
     "PortalElementType",
     "PortalPageLayoutRow",
     "PortalVisibility",

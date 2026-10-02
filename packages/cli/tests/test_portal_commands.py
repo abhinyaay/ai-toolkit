@@ -979,6 +979,94 @@ def test_portal_element_delete_with_yes_json(
     )
 
 
+def test_portal_element_delete_forwards_pruned_layout(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-element-del-layout")
+    pruned = [{"id": "row-1", "type": "row", "children": ["el-other"]}]
+    mock_client = MagicMock()
+    mock_client.delete_portal_element = AsyncMock(
+        return_value={"deleteElement": {"success": True}}
+    )
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "delete",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--layout",
+                json.dumps(pruned),
+                "--yes",
+                "--json",
+            ],
+        )
+    assert result.exit_code == 0, result.stdout + (result.stderr or "")
+    mock_client.delete_portal_element.assert_awaited_once_with(
+        _ELEMENT_UUID, _PAGE_UUID, layout=parse_portal_page_layout(pruned)
+    )
+
+
+def test_portal_element_delete_prompt_names_the_layout_rewrite(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-element-del-layout-prompt")
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "delete",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--layout",
+                "[]",
+            ],
+            input="n\n",
+        )
+    assert result.exit_code == 1
+    assert "replace that page's layout" in result.stdout
+    mock_client.delete_portal_element.assert_not_called()
+
+
+def test_portal_element_delete_rejects_layout_still_listing_element_exit_2(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    oauth_env("portal-element-del-layout-orphan")
+    leftover = [{"id": "row-1", "type": "row", "children": [_ELEMENT_UUID]}]
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "delete",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--layout",
+                json.dumps(leftover),
+                "--yes",
+            ],
+        )
+    assert result.exit_code == 2
+    assert "still lists element_id" in result.stderr
+    mock_client.delete_portal_element.assert_not_called()
+
+
 def test_portal_element_duplicate_json(runner, clean_pipefy_env, saved_cwd, oauth_env):
     oauth_env("portal-element-dup")
     duplicated = {
