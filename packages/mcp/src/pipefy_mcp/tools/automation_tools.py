@@ -490,8 +490,12 @@ class AutomationTools:
             "value": "<value>", "structure_id": <int>}``. ``field_address`` is the field
             **internal_id** (numeric; the last dotted segment when addressing a connected
             card's field), **not** a slug. ``expressions_structure`` groups expressions by
-            ``structure_id`` as AND-of-ORs: each inner array is OR'd, the inner arrays are
-            AND'd — e.g. ``[[0, 1], [2]]`` is ``(expr0 OR expr1) AND expr2``. ``operation``
+            ``structure_id`` (not position) as OR-of-ANDs: the expressions in one inner array
+            are AND'd, and the inner arrays are OR'd, e.g. ``[[0, 1], [2]]`` is
+            ``(expr0 AND expr1) OR expr2``. Give each expression its own ``structure_id``.
+            The API silently drops a number that matches no ``structure_id``, an expression
+            the structure does not list, and an expression with no ``field_address`` or
+            ``operation``; an empty ``expressions_structure`` matches every card. ``operation``
             is one of: ``equals``, ``not_equals``, ``present``, ``blank``,
             ``string_contains``, ``string_not_contains``, ``number_greater_than``,
             ``number_less_than``, ``date_is_today``, ``date_is_yesterday``,
@@ -692,7 +696,7 @@ class AutomationTools:
             ``inputMode``, ``value``, ``card_id``, ``fields_map_order``).
 
             Pass ``condition`` to replace the rule's trigger condition; its shape, the
-            ``field_address`` = internal_id rule, the ``expressions_structure`` AND-of-ORs
+            ``field_address`` = internal_id rule, the ``expressions_structure`` OR-of-ANDs
             grouping, and the ``operation`` values are documented on ``create_automation``.
             A ``condition`` argument wins over any ``condition`` in ``extra_input``.
 
