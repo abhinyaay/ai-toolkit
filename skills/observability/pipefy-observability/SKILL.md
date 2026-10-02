@@ -81,6 +81,8 @@ Full identifier map: [observability identifiers](https://github.com/pipefy/ai-to
 
    Repeat until `status` is `finished` or `failed`.
 
+   A finished export also carries `fileUrl`, a signed link to the xlsx. It expires 1 hour after the read that returned it, and anyone holding it can download the file until then. When you hand it to the user, say that it expires in 1 hour; for a fresh link, poll again.
+
 3. **Fetch CSV text** (when finished):
 
    Operation: `get_automation_jobs_export_csv export_id=<EXPORT_ID>`

@@ -64,6 +64,8 @@ When setting up an iPaaS (Advanced Automations) flow that runs under a **service
 | `get_email_templates` | Yes | List templates for a pipe or table (`repo_id` numeric). |
 | `send_email_with_template` | No | Send using a template (`email_template_id` from that list). |
 
+> **Confirm every send.** Both send operations deliver mail outside Pipefy, often to external addresses, and a sent email cannot be recalled. Before each `send_inbox_email`, show the user the recipients (`to`, plus `cc` / `bcc` when set), the subject and the body. Before each `send_email_with_template`, show the template name and the recipients it will use: the `to` you pass, or with no `to`, the template's `toEmail` (from `get_email_templates`; a `{{...}}` placeholder there resolves from the card's fields). The template's `ccEmail` / `bccEmail` are not sent: to copy someone, pass `cc` / `bcc` in the send call and show them too. Send only after the user confirms. One confirmation covers one send: a request covering several cards still needs a confirmation per email, never one approval for a loop.
+
 > **Templates are UI-only.** Creating, editing and deleting an email template has no API, MCP or CLI path: the GraphQL schema has no template CRUD mutation. The template must already exist before a flow can send with it. When the process needs a new or changed template, put the manual Pipefy UI step in the plan you give the user instead of promising an end-to-end email flow.
 
 ### Steps — send a card inbox email
@@ -72,7 +74,9 @@ When setting up an iPaaS (Advanced Automations) flow that runs under a **service
 
    Operation: `get_card_inbox_emails(card_id=12345)`
 
-2. **Send a reply:**
+2. **Confirm the draft:** show the user the recipients, the subject and the body, and wait for their approval.
+
+3. **Send the reply** (only after approval):
 
    Operation: `send_inbox_email(card_id=12345, to=["customer@example.com"], from_="you@example.com", subject="Your request is in progress", body="Hi, we are processing your request.")`
 
@@ -88,6 +92,8 @@ When setting up an iPaaS (Advanced Automations) flow that runs under a **service
 | `create_webhook` | No | Register a new webhook endpoint. |
 | `update_webhook` | No | Change URL, headers, or events. |
 | `delete_webhook` | No | **Destructive; review and approve first.** |
+
+> **Header values are secrets.** `get_webhooks` returns each webhook's `headers` unmasked, and they usually hold authorization tokens or API keys. In a reply, name only the header keys (for example `Authorization`, `X-Api-Key`), never their values, even when the user asks for them. A lost token comes back from the system that issued it; to replace it, set a new value with `update_webhook`. `update_webhook` replaces the whole `headers` object, so send every header from `get_webhooks` and change only the lost one, or the others are deleted.
 
 ### Steps — create a webhook
 
