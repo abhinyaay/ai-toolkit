@@ -17,6 +17,7 @@ from pipefy_sdk.models.portal import (
     PortalElementType,
     UpdatePortalElementInput,
     UpdatePortalInput,
+    parse_portal_page_layout,
 )
 from pipefy_sdk.queries.portal_internal_queries import (
     DELETE_SUB_PORTAL_ELEMENT_MUTATION,
@@ -489,21 +490,23 @@ class PortalService:
         )
 
     async def update_portal_page_layout(
-        self, page_id: str, layout: dict[str, Any]
+        self, page_id: str, layout: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Update a portal page grid layout (full layout blob).
 
         Args:
             page_id: Page UUID (no parent ``interface_uuid`` on this mutation).
-            layout: Layout JSON as required by ``updatePageLayout``.
+            layout: Full row array from ``get_portal`` -> ``pages[].layout``.
+                ``[]`` is an empty page.
         """
+        rows = parse_portal_page_layout(layout)
         return await _execute_query_with_portal_errors(
             self.execute_interfaces_query,
             UPDATE_PAGE_LAYOUT_MUTATION,
             {
                 "input": {
                     "page_id": page_id,
-                    "layout": _serialize_interfaces_json(layout),
+                    "layout": _serialize_interfaces_json(rows),
                 }
             },
         )
@@ -517,7 +520,7 @@ class PortalService:
         data_sources: list[dict[str, Any]] | None = None,
         element_id: str | None = None,
         editable: bool | None = None,
-        layout: dict[str, Any] | None = None,
+        layout: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Create a portal page element on the Interfaces schema.
 
@@ -528,7 +531,9 @@ class PortalService:
             data_sources: Optional data source bindings (e.g. for ``forms``).
             element_id: Optional client-provided element UUID (GraphQL ``id``).
             editable: Optional editable flag.
-            layout: Optional layout JSON.
+            layout: Optional full page layout row array (``get_portal`` ->
+                ``pages[].layout``) with a row whose children list ``element_id``,
+                to create and place in one call. Omit to leave the grid untouched.
         """
         validated = CreatePortalElementInput.model_validate(
             {

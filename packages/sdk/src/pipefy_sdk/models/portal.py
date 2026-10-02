@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from pipefy_sdk.models.validators import NonBlankStr
 
@@ -102,6 +102,44 @@ class UpdatePortalInput(BaseModel):
     )
 
 
+_LAYOUT_ROW_REQUIREMENT = (
+    "id (non-empty string), type 'row', and children (list of non-empty strings)"
+)
+
+
+class PortalPageLayoutRow(BaseModel):
+    """One ``pages[].layout`` row."""
+
+    model_config = ConfigDict(extra="allow")
+
+    id: NonBlankStr
+    type: Literal["row"]
+    children: list[NonBlankStr]
+
+
+def parse_portal_page_layout(layout: list[Any]) -> list[dict[str, Any]]:
+    """Return ``layout`` when every item is a page row.
+
+    An empty list is an empty page. The original dicts are returned so unknown
+    keys and key order survive the write.
+    """
+    parsed: list[dict[str, Any]] = []
+    for index, row in enumerate(layout):
+        if not isinstance(row, dict):
+            raise ValueError(
+                f"layout[{index}] must be an object with {_LAYOUT_ROW_REQUIREMENT}; "
+                f"got {type(row).__name__}."
+            )
+        try:
+            PortalPageLayoutRow.model_validate(row)
+        except ValidationError as exc:
+            raise ValueError(
+                f"layout[{index}] must have {_LAYOUT_ROW_REQUIREMENT}; got {row!r}."
+            ) from exc
+        parsed.append(row)
+    return parsed
+
+
 class CreatePortalElementInput(BaseModel):
     """Validated input for ``createElement`` on the Interfaces schema."""
 
@@ -116,7 +154,13 @@ class CreatePortalElementInput(BaseModel):
         description="Optional client-provided element UUID (GraphQL input id).",
     )
     editable: bool | None = None
-    layout: dict[str, Any] | None = None
+    layout: list[dict[str, Any]] | None = Field(
+        default=None,
+        description=(
+            "Full page layout row array (get_portal pages[].layout) including a row "
+            "whose children list element_id; omit to leave the page grid untouched."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_metadata_for_element_type(self) -> Self:
@@ -126,6 +170,30 @@ class CreatePortalElementInput(BaseModel):
             )
         _validate_element_metadata(self.type, self.metadata)
         return self
+
+    @model_validator(mode="after")
+    def validate_layout_places_element(self) -> Self:
+        """``layout`` must reference the new element, or the write places nothing.
+
+        The Interfaces API stores whatever JSON it receives in ``layout``; a row
+        array that never lists ``element_id`` leaves the element outside the grid.
+        """
+        if self.layout is None:
+            return self
+        self.layout = parse_portal_page_layout(self.layout)
+        element_id = (self.element_id or "").strip()
+        if not element_id:
+            raise ValueError(
+                "layout requires element_id: generate a UUID, pass it as element_id, "
+                "and list it in the children of one layout row."
+            )
+        for row in self.layout:
+            if element_id in row["children"]:
+                return self
+        raise ValueError(
+            "layout must contain a row whose children include element_id; "
+            "otherwise the element is created outside the page grid."
+        )
 
 
 class UpdatePortalElementInput(BaseModel):
@@ -162,4 +230,5 @@ __all__ = [
     "PortalVisibility",
     "UpdatePortalElementInput",
     "UpdatePortalInput",
+    "parse_portal_page_layout",
 ]
