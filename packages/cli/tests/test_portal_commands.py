@@ -1067,6 +1067,44 @@ def test_portal_element_delete_rejects_layout_still_listing_element_exit_2(
     mock_client.delete_portal_element.assert_not_called()
 
 
+@pytest.mark.parametrize("raw_layout", ["", "  ", "null"])
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["delete", _ELEMENT_UUID, _PAGE_UUID, "--yes"],
+        [
+            "create",
+            "--page-id",
+            _PAGE_UUID,
+            "--type",
+            "link",
+            "--metadata",
+            json.dumps({"linkName": "Docs"}),
+            "--element-id",
+            "el-new",
+        ],
+    ],
+    ids=["delete", "create"],
+)
+def test_portal_element_given_blank_layout_exit_2(
+    runner, clean_pipefy_env, saved_cwd, oauth_env, command, raw_layout
+):
+    """A layout variable that came out empty must not run the write without a grid."""
+    oauth_env("portal-element-blank-layout")
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app, ["portal", "element", *command, "--layout", raw_layout]
+        )
+    assert result.exit_code == 2
+    assert "JSON array of row objects" in result.stderr
+    mock_client.delete_portal_element.assert_not_called()
+    mock_client.create_portal_element.assert_not_called()
+
+
 def test_portal_element_duplicate_json(runner, clean_pipefy_env, saved_cwd, oauth_env):
     oauth_env("portal-element-dup")
     duplicated = {

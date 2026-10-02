@@ -133,13 +133,9 @@ _LAYOUT_ROWS_MESSAGE = (
 )
 
 
-def _parse_layout_rows(
-    raw: str | None, option_name: str
-) -> list[PortalPageLayoutRow] | None:
-    """Parse a page layout row array; ``None`` when the option was not given."""
+def _parse_layout_rows(raw: str, option_name: str) -> list[PortalPageLayoutRow]:
+    """Parse a given page layout row array; blank text and ``null`` are rejected."""
     parsed = parse_json_value(raw, option_name)
-    if parsed is None:
-        return None
     if not isinstance(parsed, list) or not all(isinstance(row, dict) for row in parsed):
         raise typer.BadParameter(_LAYOUT_ROWS_MESSAGE.format(option=option_name))
     try:
@@ -525,8 +521,6 @@ def portal_page_layout_update(
 
     page_id = _require_non_empty_portal_uuid(page_id)
     layout_rows = _parse_layout_rows(layout, "--layout")
-    if layout_rows is None:
-        raise typer.BadParameter(_LAYOUT_ROWS_MESSAGE.format(option="--layout"))
 
     async def factory(client: PipefyClient):
         return await client.update_portal_page_layout(page_id, layout_rows)
@@ -582,7 +576,7 @@ def portal_element_create(
     page_id = _require_non_empty_portal_uuid(page_id)
     metadata_obj = _parse_required_metadata_json(metadata, "--metadata")
     data_sources_list = _parse_optional_data_sources_json(data_sources)
-    layout_rows = _parse_layout_rows(layout, "--layout")
+    layout_rows = None if layout is None else _parse_layout_rows(layout, "--layout")
     cleaned_element_id = (
         element_id.strip() if element_id and element_id.strip() else None
     )
@@ -699,7 +693,7 @@ def portal_element_delete(
 
     element_id = _require_non_empty_portal_uuid(element_id)
     page_id = _require_non_empty_portal_uuid(page_id)
-    layout_rows = _parse_layout_rows(layout, "--layout")
+    layout_rows = None if layout is None else _parse_layout_rows(layout, "--layout")
     try:
         validated = DeletePortalElementInput.model_validate(
             {"element_id": element_id, "page_id": page_id, "layout": layout_rows}
