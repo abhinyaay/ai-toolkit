@@ -31,8 +31,8 @@ def _email_descriptor(draft: InboxEmailDraft) -> str:
 def _email_irreversible_sentence(draft: InboxEmailDraft) -> str:
     return (
         f"Sending the {_email_descriptor(draft)} cannot be undone: a sent email "
-        "cannot be recalled. The full message (recipients, cc/bcc, subject, "
-        "body) is under 'email'."
+        "cannot be recalled. The resolved message (recipients, cc/bcc, sender, "
+        "subject, body) is under 'email'."
     )
 
 
@@ -172,6 +172,11 @@ class WebhookTools:
             same arguments plus ``confirm=True`` and that token. The token covers
             that one message: change any argument and it no longer verifies.
 
+            The token is replayable within its TTL, so resending the confirmed
+            call sends the email again. On an error or timeout after step 2, list
+            the card's sent mail (``get_card_inbox_emails`` with
+            ``email_type='sent'``) before retrying; do not blind-retry a send.
+
             Args:
                 card_id: ID of the card.
                 to: List of recipient email addresses.
@@ -252,7 +257,7 @@ class WebhookTools:
                     resource_id=str(cid),
                 )
             return build_webhook_success_payload(
-                message="Email sent.",
+                message="Send requested; 'emailSent' in data reports whether it went out.",
                 data=raw,
             )
 
@@ -284,6 +289,11 @@ class WebhookTools:
             plus ``confirm=True`` and that token. If the resolved message
             changes before step 2 (the card was edited), the token no longer
             verifies and a fresh preview comes back.
+
+            The token is replayable within its TTL, so resending the confirmed
+            call sends the email again. On an error or timeout after step 2, list
+            the card's sent mail (``get_card_inbox_emails`` with
+            ``email_type='sent'``) before retrying; do not blind-retry a send.
 
             Hard stop: there is no API or MCP path to create or change an email
             template. A flow that needs a new or edited template requires a
@@ -375,7 +385,7 @@ class WebhookTools:
                     resource_id=str(cid),
                 )
             return build_webhook_success_payload(
-                message="Email sent with template.",
+                message="Template send requested; 'emailSent' in data reports whether it went out.",
                 data=raw,
             )
 
