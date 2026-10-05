@@ -533,7 +533,7 @@ async def test_create_automation_invalid_condition_returns_error(
     assert payload["success"] is False
     message = tool_error_message(payload)
     assert "condition" in message.lower()
-    # The raw pydantic rendering must not leak to the agent (issue #703).
+    # The raw pydantic rendering must not leak to the agent.
     assert "input_value=" not in message
     assert "pydantic.dev" not in message
     mock_automation_client.create_automation.assert_not_called()
@@ -1282,7 +1282,7 @@ class TestPipefyIdCoercion:
 async def test_create_send_task_automation_validation_error_has_no_pydantic_noise(
     automation_session, mock_automation_client, extract_payload
 ):
-    """A blank recipient fails CreateSendTaskAutomationInput; the message stays clean (#703)."""
+    """A blank recipient fails CreateSendTaskAutomationInput; the message stays clean."""
     async with automation_session as session:
         result = await session.call_tool(
             "create_send_task_automation",

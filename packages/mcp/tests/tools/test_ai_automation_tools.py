@@ -1603,7 +1603,7 @@ class TestValidateAiAutomationPromptCreditCheck:
 
 @pytest.mark.anyio
 class TestAiAutomationValidationMessageHygiene:
-    """The inner SDK-model ValidationError must not leak pydantic noise (#703)."""
+    """The inner SDK-model ValidationError must not leak pydantic noise."""
 
     async def test_create_ai_automation_validation_error_has_no_pydantic_noise(
         self, client_session, mock_pipefy_client, extract_payload
