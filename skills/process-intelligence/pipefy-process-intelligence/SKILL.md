@@ -48,7 +48,7 @@ The user asks to analyze or improve an existing process:
 
    Operation: `get_cards pipe_id=<id> first=50 include_fields=true`
 
-   Look for: cards piling up in early phases, phases with 0 cards, fields left empty. Card reads return no dates, so they cannot show which cards are stale; see the note under the diagnosis framework.
+   Look for: cards piling up in early phases, phases with 0 cards, fields left empty. Card reads return no creation, update, or phase timestamps, so they cannot show which cards are stale; see the note under the diagnosis framework.
 
 3. **Check automations:**
 
@@ -60,13 +60,17 @@ The user asks to analyze or improve an existing process:
 
    Operation: `get_ai_agents repo_uuid=<PIPE_UUID>`
 
-   Look for: no AI agents despite manual categorization or triage patterns.
+   For each active agent (`disabledAt` is null), read its behaviors to see which phases it already acts on:
+
+   Operation: `get_ai_agent uuid=<AGENT_UUID>`
+
+   Look for: no AI agents despite manual categorization or triage patterns, and hops an active behavior already covers (do not report those as manual).
 
 ---
 
 ## Diagnosis framework
 
-Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `get_pipe` and `get_cards` do not return. Measure them with a pipe report export (`pipefy-reports`): its columns include `created_at`, `finished_at`, `updated_at`, and a "Total time in <phase>" column per phase, listed by `get_pipe_report_columns`. Without an export, ask the user; do not infer time from `cards_count` or a card sample.
+Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `get_pipe` and `get_cards` do not return. Measure them with a pipe report export (`pipefy-reports`). The export works on an existing pipe report (`get_pipe_reports`); if the pipe has none, creating one with `create_pipe_report` is a write, so ask first. Pass the date columns by `name` in `columns`, taken from `get_pipe_report_columns`: `updated_at` for stale cards, `duration_in_phase_<n>` for time in a phase, and `end_at_phase_<n>` for when cards last left it (`<n>` is a report index, not the phase id). Without an export, ask the user; do not infer time from `cards_count` or a card sample.
 
 | Signal | Opportunity |
 |--------|-------------|
@@ -116,20 +120,20 @@ Each round focuses on 1–2 improvements; report results before proceeding.
 - [Change 1]: [tool called + result]
 
 ### Impact
-[One line: minimum step done or proposed, time it returns to the team (formula or labeled assumption), and the extra lift of the next step, or "next step does not close". Lead time only if this round already has dates.]
+[One line: minimum step done or proposed, time it returns to the team (formula with the missing numbers named), and the extra lift of the next step, or "next step does not close". Lead time only if this round already has dates.]
 
 ### Next round (if approved)
 - [Opportunity]: [proposed action]
 ```
 
-Keep Impact to one line. Do not invent volume, hourly cost, or lead time; name a missing number and ask for it. For a fuller justification, read `pipefy-process-impact`. Do not recommend deleting a pipe.
+Keep Impact to one line. Do not invent volume, hourly cost, or lead time; name every missing number and ask for all of them in one question. For a fuller justification, read `pipefy-process-impact`. Do not recommend deleting a pipe.
 
 ---
 
 ## Success criteria
 
 - Each round produces a concrete visible change (new automation, field condition, phase cleanup).
-- Card throughput improves in the affected phase within the next sprint.
+- The affected phase moves more cards: compare cards leaving it per week (`end_at_phase_<n>` in a pipe report export) before and after the change, or ask the user when no export is available.
 - No improvement causes a regression (verify with `get_pipe` and `get_cards` after each round).
 
 ## Failure modes

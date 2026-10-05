@@ -19,6 +19,10 @@ get_ai_agents repo_uuid=<PIPE_UUID>
 ```
 
 ```text
+get_ai_agent uuid=<AGENT_UUID>
+```
+
+```text
 create_automation pipe_id=<id> name="Automate manual step" trigger_id=<EVENT_ID> action_id=<ACTION_ID> active=false
 ```
 
