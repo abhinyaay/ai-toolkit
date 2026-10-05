@@ -25,7 +25,7 @@ The user asks to analyze or improve an existing process:
 - "Is this pipe optimized?"
 - "Where are the bottlenecks?"
 
-**Not for:** designing a new process from scratch → use `pipefy-process-design`.
+**Not for:** designing a new process from scratch → use `pipefy-process-design`. Justifying a change with numbers, without implementing it → use `pipefy-process-impact`.
 
 ---
 
@@ -74,7 +74,7 @@ The user asks to analyze or improve an existing process:
 | Same comment posted repeatedly | AI agent to auto-post based on trigger |
 | No automation between intake and first action | Add "notify assignee" automation on card creation |
 | Large field count on start form | Move optional fields to later phases |
-| Phases with 0 cards over 90 days | Consider removing or merging phases |
+| Phases with 0 cards over 90 days | Merge into a neighboring phase, or replace the hop with an automation or AI agent. Do not treat an empty phase as a reason to delete the pipe. |
 
 ---
 
@@ -113,9 +113,14 @@ Each round focuses on 1–2 improvements; report results before proceeding.
 ### Implemented this round
 - [Change 1]: [tool called + result]
 
+### Impact
+[One line: minimum step done or proposed, time it returns to the team (formula or labeled assumption), and the extra lift of the next step, or "next step does not close". Lead time only if this round already has dates.]
+
 ### Next round (if approved)
 - [Opportunity]: [proposed action]
 ```
+
+Keep Impact to one line. Do not invent volume, hourly cost, or lead time. For a fuller justification, read `pipefy-process-impact`. Do not recommend deleting a pipe.
 
 ---
 
@@ -127,7 +132,7 @@ Each round focuses on 1–2 improvements; report results before proceeding.
 
 ## Failure modes
 
-- **`get_cards` returns empty:** pipe may have no cards yet — analyze structure only and recommend first card creation.
+- **`get_cards` returns empty:** the pipe may have no cards yet. Analyze structure only, and recommend standing up intake (start form, portal, or an automation that creates cards) rather than removing the pipe.
 - **`create_automation` fails with unknown event:** use `get_automation_events` to list valid triggers.
 - **User pushes back on automation:** explain what the automation does in plain language before creating.
 
@@ -136,3 +141,4 @@ Each round focuses on 1–2 improvements; report results before proceeding.
 - `pipefy-automations` — detailed automation creation guide.
 - `pipefy-ai-agents` — add conversational agents for user-facing automation.
 - `pipefy-observability` — check credit and execution data to quantify improvement impact.
+- `pipefy-process-impact` for a fuller justification; this skill only emits the Impact line per round.
