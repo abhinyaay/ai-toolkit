@@ -1,12 +1,11 @@
 # CLI reference
 
-Diagnosis mode follows round 1 of `pipefy-process-intelligence`, then reads agent behaviors. An Impact case only runs the coverage check (`get_pipe`, `get_automations`, `get_ai_agents`, `get_ai_agent`) and, when the rule in the skill allows it, a pipe report export.
+The skill runs the coverage check (`get_pipe`, `get_automations`, `get_ai_agents`, `get_ai_agent`) when the user names a pipe and, when they asked to measure, a pipe report export. Nothing else.
 
 | Operation | Command |
 |-----------|---------|
 | `search_pipes` | `pipefy pipe list --name <text>` |
 | `get_pipe` | `pipefy pipe get <PIPE_ID> --json` |
-| `get_cards` | `pipefy card list --pipe <PIPE_ID> --include-fields --json` |
 | `get_automations` | `pipefy automation list --pipe <PIPE_ID> --json` |
 | `get_ai_agents` | `pipefy agent list --repo <PIPE_UUID> --json` |
 | `get_ai_agent` | `pipefy agent get <AGENT_UUID> --json` |

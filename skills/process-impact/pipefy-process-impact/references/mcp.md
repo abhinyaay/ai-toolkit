@@ -1,6 +1,6 @@
 # MCP reference
 
-Diagnosis mode follows round 1 of `pipefy-process-intelligence`, whose MCP reference has the full invocation list, then reads agent behaviors. An Impact case only runs the coverage check and, when the rule in the skill allows it, a pipe report export.
+The skill runs the coverage check when the user names a pipe and, when they asked to measure, a pipe report export. Nothing else.
 
 ## Coverage check
 
@@ -25,14 +25,6 @@ For each active agent, read its behaviors:
 ```text
 get_ai_agent uuid=<agent.uuid>
 ```
-
-## Card sample (Diagnosis only)
-
-```text
-get_cards pipe_id=<id> first=50 include_fields=true
-```
-
-The page size is a composition sample, not weekly volume.
 
 ## Pipe report export
 

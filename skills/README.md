@@ -47,7 +47,7 @@ git clone https://github.com/pipefy/ai-toolkit.git
 | **Attachments** | [pipefy-attachments](attachments/pipefy-attachments/SKILL.md) | Upload files to card or table-record attachment fields. |
 | **Building** | [pipefy-building](building/pipefy-building/SKILL.md) | Thin router: map build/configure intent → domain skill. Not a delivery playbook. |
 | **Process Design** | [pipefy-process-design](process-design/pipefy-process-design/SKILL.md) | Process architecture (consulting; not execution). |
-| **Process Impact** | [pipefy-process-impact](process-impact/pipefy-process-impact/SKILL.md) | Whether a process change is worth it: time returned, impact case, ROI (consulting; not execution). |
+| **Process Impact** | [pipefy-process-impact](process-impact/pipefy-process-impact/SKILL.md) | Where an automation or AI agent returns the most time: one hop, the arithmetic, the cheapest step (consulting; not execution). |
 | **Process Intelligence** | [pipefy-process-intelligence](process-intelligence/pipefy-process-intelligence/SKILL.md) | Analyze pipes for improvement opportunities. |
 | **API Fallback** | [pipefy-api-fallback](api-troubleshoot/pipefy-api-fallback/SKILL.md) | Raw GraphQL fallback when higher-level tools are insufficient. |
 | **Onboarding** | [pipefy-toolkit-setup](onboarding/pipefy-toolkit-setup/SKILL.md) | First-time install: Cursor Marketplace plugin, hosted MCP, `install.sh`, or Claude Code plugin. |
