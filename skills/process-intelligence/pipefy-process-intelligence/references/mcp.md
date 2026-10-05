@@ -11,6 +11,23 @@ get_cards pipe_id=<id> first=50 include_fields=true
 ```
 
 ```text
+execute_graphql query=<document below> variables={"pipeId": "<id>"}
+```
+
+```graphql
+query TimedCards($pipeId: ID!, $first: Int = 25, $after: String) {
+  cards(pipe_id: $pipeId, first: $first, after: $after) {
+    pageInfo { hasNextPage endCursor }
+    edges { node {
+      id done createdAt finished_at started_current_phase_at current_phase_age updated_at
+      current_phase { name }
+      phases_history { phase { name } firstTimeIn lastTimeOut duration }
+    } }
+  }
+}
+```
+
+```text
 get_automations pipe_id=<id>
 ```
 

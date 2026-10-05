@@ -1,6 +1,6 @@
 # MCP reference
 
-The skill runs the coverage check when the user names a pipe and, when they asked to measure, a pipe report export. Nothing else.
+The skill runs the coverage check when the user names a pipe, the timed card read when they want lead time or time per phase, and a pipe report export for whole-pipe volume. Nothing else.
 
 ## Coverage check
 
@@ -26,7 +26,28 @@ For each active agent, read its behaviors:
 get_ai_agent uuid=<agent.uuid>
 ```
 
-## Pipe report export
+## Timed card read
+
+```text
+execute_graphql query=<document below> variables={"pipeId": "<id>"}
+```
+
+```graphql
+query TimedCards($pipeId: ID!, $first: Int = 25, $after: String) {
+  cards(pipe_id: $pipeId, first: $first, after: $after) {
+    pageInfo { hasNextPage endCursor }
+    edges { node {
+      id done createdAt finished_at started_current_phase_at current_phase_age updated_at
+      current_phase { name }
+      phases_history { phase { name } firstTimeIn lastTimeOut duration }
+    } }
+  }
+}
+```
+
+`duration` is seconds; `lastTimeOut` is null on the phase the card is in. Pass `"after": <pageInfo.endCursor>` in `variables` for the next page. A page of 25 cards with `phases_history` is about 40 thousand characters; raise `first` (the API caps it at 50) only when the client can hold it.
+
+## Pipe report export (whole-pipe volume)
 
 ```text
 get_pipe_reports pipe_uuid=<pipe.uuid>

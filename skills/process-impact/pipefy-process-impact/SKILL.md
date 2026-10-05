@@ -28,7 +28,7 @@ Not for designing a process (`pipefy-process-design`), a full pipe diagnosis or 
 ## How to answer
 
 1. **Pick the hop.** From the conversation, name the one manual, repetitive step with the best return: a move someone does by hand, a triage, a copy-paste, a chase. With several candidates, take the one with the most cases per week. Do not walk the whole process.
-2. **Check coverage when a pipe is named.** Run the reads in the reference: `get_pipe`, `get_automations`, `get_ai_agents`, then `get_ai_agent` for each active agent. If an active automation or agent already does the hop, say so, size that coverage, and move to the next uncovered hop, restating what the agent or rule already does there. Do not propose a second one. With no pipe in view, say coverage was not checked instead of claiming nothing covers the hop. Skip card reads: `get_cards` and `find_cards` carry no timestamps, and `cards_count` is what sits in a phase now, not volume or duration.
+2. **Check coverage when a pipe is named.** Run the reads in the reference: `get_pipe`, `get_automations`, `get_ai_agents`, then `get_ai_agent` for each active agent. If an active automation or agent already does the hop, say so, size that coverage, and move to the next uncovered hop, restating what the agent or rule already does there. Do not propose a second one. With no pipe in view, say coverage was not checked instead of claiming nothing covers the hop. `cards_count` is what sits in a phase now, not volume or duration, and `get_cards` selects no dates; when the answer needs time, use the timed card read under Measuring.
 3. **Show the arithmetic**, with the user's numbers or the gaps named:
 
 ```text
@@ -36,7 +36,7 @@ hours returned per week ≈ minutes per case × cases per week / 60
 cost avoided per week ≈ hours returned per week × hourly cost   (only if the user gave an hourly cost)
 ```
 
-   Never fill a gap yourself. Weekly volume and lead time come from the user or from a pipe report export (see Measuring), never from a card sample or `cards_count`.
+   Never fill a gap yourself. Lead time and time per phase come from the timed card read, weekly volume from the user or a pipe report export (see Measuring), never from `cards_count` or an undated sample.
 4. **Name the cheapest step that removes the hop.** A traditional automation when the decision reads from fields ("if value > X, move"). An AI agent or AI automation only when the hop needs reading free text, documents, or a conversation. iPaaS when the work lives in another app. One sentence on which and why. Do not stack rule and AI as "do both now"; mention the AI step as optional when a rule leaves part of the hop manual.
 5. **End with one thing**: the missing numbers in one short question, or the next step (the next hop, a measured export, or building it with the domain skill).
 
@@ -51,7 +51,7 @@ Step: [automation | AI agent | iPaaS], [one sentence on why this one]
 Next: [one question, or one offer]
 ```
 
-For a written case, expand each line into a short paragraph and add an "Assumptions" line. Money only with an hourly cost. Lead time only from an export or a cycle the user stated.
+For a written case, expand each line into a short paragraph and add an "Assumptions" line. Money only with an hourly cost. Lead time only from the timed card read, an export, or a cycle the user stated.
 
 ## Rules
 
@@ -62,7 +62,9 @@ For a written case, expand each line into a short paragraph and add an "Assumpti
 
 ## Measuring
 
-Lead time and weekly volume need dates, and only a pipe report export carries them: `created_at`, `finished_at`, `updated_at`, and per phase `duration_in_phase_<n>`, where `<n>` is a report index. Run the export when the user asked to measure; otherwise offer it in the Next line. The export works on an existing report (`get_pipe_reports`); when the pipe has none, `create_pipe_report` is a write, so ask first. Pass the date columns by `name` from `get_pipe_report_columns`. `pipefy-reports` has the export and polling steps.
+Lead time, age, and time per phase come from a timed card read: one `execute_graphql` query on the pipe's cards that selects `createdAt`, `finished_at`, `started_current_phase_at`, `current_phase_age`, and `phases_history` (`firstTimeIn`, `lastTimeOut`, `duration` in seconds per phase). The document is in the reference. It is a read, runs with no confirmation, and returns 25 cards per page (up to 50); say how many cards the numbers come from, and page with `after` when the pipe has more. Lead time is `finished_at` minus `createdAt` on done cards; time in a phase is the `duration` of its `phases_history` entry.
+
+Weekly volume for a whole pipe comes from the user or from a pipe report export (`created_at` per card), which is the better path when the pipe has more cards than a few pages. The export works on an existing report (`get_pipe_reports`); when the pipe has none, `create_pipe_report` is a write, so ask first. Pass the date columns by `name` from `get_pipe_report_columns`; `pipefy-reports` has the export and polling steps. The export ends in an XLSX link, so use it for volume, not for a number the user wants in the chat.
 
 ## Tools
 
@@ -73,7 +75,8 @@ Lead time and weekly volume need dates, and only a pipe report export carries th
 | `get_automations` | Yes | Hops an active rule already covers (`active` and `actionEnabled`) |
 | `get_ai_agents` | Yes | Agents on the pipe; active when `disabledAt` is null |
 | `get_ai_agent` | Yes | Behaviors with `active: true` and the phase each acts on |
-| `get_pipe_reports` | Yes | Existing reports to export |
+| `execute_graphql` | Yes, for a query | Timed card read: the dates and time per phase that `get_cards` leaves out |
+| `get_pipe_reports` | Yes | Existing reports to export for whole-pipe volume |
 | `get_pipe_report_columns` | Yes | Column `name` values for the export |
 | `export_pipe_report` | No | Start the export; changes no card |
 | `get_pipe_report_export` | Yes | Poll until the file is ready |

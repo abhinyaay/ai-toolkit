@@ -48,7 +48,7 @@ The user asks to analyze or improve an existing process:
 
    Operation: `get_cards pipe_id=<id> first=50 include_fields=true`
 
-   Look for: cards piling up in early phases, phases with 0 cards, fields left empty. Card reads return no creation, update, or phase timestamps, so they cannot show which cards are stale; see the note under the diagnosis framework.
+   Look for: cards piling up in early phases, phases with 0 cards, fields left empty. `get_cards` selects no creation, update, or phase timestamps; the timed card read under the diagnosis framework does.
 
 3. **Check automations:**
 
@@ -70,7 +70,7 @@ The user asks to analyze or improve an existing process:
 
 ## Diagnosis framework
 
-Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `get_pipe` and `get_cards` do not return. Measure them with a pipe report export (`pipefy-reports`). The export works on an existing pipe report (`get_pipe_reports`); if the pipe has none, creating one with `create_pipe_report` is a write, so ask first. Pass the date columns by `name` in `columns`, taken from `get_pipe_report_columns`: `updated_at` for stale cards, `duration_in_phase_<n>` for time in a phase, and `end_at_phase_<n>` for when cards last left it (`<n>` is a report index, not the phase id). Without an export, ask the user; do not infer time from `cards_count` or a card sample.
+Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `get_pipe` and `get_cards` do not return. Measure them with a timed card read: one `execute_graphql` query on the pipe's cards selecting `updated_at`, `current_phase_age`, and `phases_history` (`firstTimeIn`, `lastTimeOut`, `duration` in seconds per phase); the document is in the reference. It is a read with no confirmation, 25 cards per page (up to 50), so say how many cards the numbers come from. Use a pipe report export (`pipefy-reports`) only for whole-pipe throughput, such as cards leaving a phase per week (`end_at_phase_<n>`, where `<n>` is a report index, not the phase id); the export needs an existing report (`get_pipe_reports`), and creating one with `create_pipe_report` is a write, so ask first. Without either, ask the user; do not infer time from `cards_count`.
 
 | Signal | Opportunity |
 |--------|-------------|
@@ -133,7 +133,7 @@ Keep Impact to one line. Do not invent volume, hourly cost, or lead time; name e
 ## Success criteria
 
 - Each round produces a concrete visible change (new automation, field condition, phase cleanup).
-- The affected phase moves more cards: compare cards leaving it per week (`end_at_phase_<n>` in a pipe report export) before and after the change, or ask the user when no export is available.
+- The affected phase moves more cards: compare cards leaving it per week (`lastTimeOut` in the timed card read, or `end_at_phase_<n>` in a pipe report export) before and after the change, or ask the user.
 - No improvement causes a regression (verify with `get_pipe` and `get_cards` after each round).
 
 ## Failure modes
