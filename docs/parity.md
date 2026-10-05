@@ -171,8 +171,8 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `search_pipes` | `pipefy pipe list` | shipped | (`--name`, `--max-per-org`). |
 | `search_schema` | `pipefy introspect schema search` | shipped | (optional `--kind`). |
 | `search_tables` | `pipefy table list` | shipped | (without ``--ids``). |
-| `send_email_with_template` | `pipefy email template send` | shipped | (`--card`, `--template`). |
-| `send_inbox_email` | `pipefy email inbox send` | shipped | (`--from-email`, `--to`, `--subject`, `--body`). |
+| `send_email_with_template` | `pipefy email template send` | shipped | (`--card`, `--template`). MCP two-step with `confirmation_token`: the preview returns the message resolved for the card, and a changed resolution returns a fresh preview. CLI prints the email and exits 2 unless `--yes`. |
+| `send_inbox_email` | `pipefy email inbox send` | shipped | (`--from-email`, `--to`, `--subject`, `--body`). MCP two-step with `confirmation_token`: the preview returns the message, and the token binds to it. CLI prints the email and exits 2 unless `--yes`. |
 | `set_default_llm_provider` | `pipefy ai-provider default set` | shipped | Organization-scoped; exactly one of `--provider-id` / `--system-provider-id`. |
 | `set_llm_provider_active_status` | `pipefy ai-provider set-active-status` | shipped | Custom (BYOM) provider; `--active/--inactive`; org from session. |
 | `set_role` | `pipefy member set-role` | shipped | — |
