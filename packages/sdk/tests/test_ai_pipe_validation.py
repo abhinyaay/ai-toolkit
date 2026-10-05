@@ -104,6 +104,7 @@ async def test_fetch_pipe_validation_context_surfaces_phase_fetch_warning() -> N
         field_ids,
         phase_ids,
         related_pipe_ids,
+        _pipe_event_ids,
         fetch_warnings,
     ) = await fetch_pipe_validation_context(client, EXAMPLE_PIPE_ID, timeout=5)
 
@@ -137,7 +138,7 @@ async def test_fetch_pipe_validation_context_excludes_start_form_phase() -> None
     )
     client.get_phase_fields = AsyncMock(return_value={"fields": []})
 
-    _, phase_ids, _, _ = await fetch_pipe_validation_context(
+    _, phase_ids, _, _, _ = await fetch_pipe_validation_context(
         client, EXAMPLE_PIPE_ID, timeout=5
     )
 
@@ -176,7 +177,7 @@ async def test_fetch_pipe_validation_context_reads_get_pipe_relations_payload() 
         }
     )
 
-    _, _, related_pipe_ids, _ = await fetch_pipe_validation_context(
+    _, _, related_pipe_ids, _, _ = await fetch_pipe_validation_context(
         client, EXAMPLE_PIPE_ID, timeout=5
     )
 
@@ -209,7 +210,7 @@ async def test_fetch_pipe_validation_context_skips_null_relation_entries() -> No
         }
     )
 
-    _, _, related_pipe_ids, _ = await fetch_pipe_validation_context(
+    _, _, related_pipe_ids, _, _ = await fetch_pipe_validation_context(
         client, EXAMPLE_PIPE_ID, timeout=5
     )
 
@@ -225,7 +226,7 @@ async def test_fetch_pipe_validation_context_returns_none_when_relations_fail() 
     )
     client.get_pipe_relations = AsyncMock(side_effect=RuntimeError("denied"))
 
-    _, _, related_pipe_ids, _ = await fetch_pipe_validation_context(
+    _, _, related_pipe_ids, _, _ = await fetch_pipe_validation_context(
         client, EXAMPLE_PIPE_ID, timeout=5
     )
 
@@ -384,3 +385,175 @@ def test_validate_behaviors_flags_unknown_field_id_when_field_set_empty() -> Non
 
     assert len(problems) == 1
     assert EXAMPLE_FIELD_INTERNAL_ID in problems[0]
+
+
+def _behavior_with_event(event_id: str) -> dict:
+    return {
+        "name": "React to event",
+        "event_id": event_id,
+        "actionParams": {
+            "aiBehaviorParams": {
+                "instruction": "Do something",
+                "actionsAttributes": [
+                    {"name": "act", "actionType": "update_card", "metadata": {}}
+                ],
+            }
+        },
+    }
+
+
+def _behavior_with_action(action_type: str, metadata: dict) -> dict:
+    return {
+        "name": "Act",
+        "event_id": "card_created",
+        "actionParams": {
+            "aiBehaviorParams": {
+                "instruction": "Do something",
+                "actionsAttributes": [
+                    {"name": "act", "actionType": action_type, "metadata": metadata}
+                ],
+            }
+        },
+    }
+
+
+@pytest.mark.unit
+def test_validate_behaviors_rejects_event_id_not_offered_by_pipe() -> None:
+    problems, warnings = validate_behaviors_against_pipe(
+        [_behavior_with_event("not_a_real_event")],
+        pipe_id=EXAMPLE_PIPE_ID,
+        pipe_field_ids=set(),
+        pipe_phase_ids=set(),
+        related_pipe_ids=set(),
+        pipe_event_ids={"card_created", "card_moved"},
+    )
+    assert warnings == []
+    assert len(problems) == 1
+    assert "not_a_real_event" in problems[0]
+    # the error lists the valid events to choose from
+    assert "card_created" in problems[0]
+
+
+@pytest.mark.unit
+def test_validate_behaviors_accepts_event_id_offered_by_pipe() -> None:
+    problems, _ = validate_behaviors_against_pipe(
+        [_behavior_with_event("card_created")],
+        pipe_id=EXAMPLE_PIPE_ID,
+        pipe_field_ids=set(),
+        pipe_phase_ids=set(),
+        related_pipe_ids=set(),
+        pipe_event_ids={"card_created", "card_moved"},
+    )
+    assert problems == []
+
+
+@pytest.mark.unit
+def test_validate_behaviors_skips_event_id_check_when_events_unknown() -> None:
+    # None (not loaded) and an empty set (not enumerable) both skip the check,
+    # so a stale event_id is not falsely flagged.
+    for events in (None, set()):
+        problems, _ = validate_behaviors_against_pipe(
+            [_behavior_with_event("not_a_real_event")],
+            pipe_id=EXAMPLE_PIPE_ID,
+            pipe_field_ids=set(),
+            pipe_phase_ids=set(),
+            related_pipe_ids=set(),
+            pipe_event_ids=events,
+        )
+        assert problems == []
+
+
+@pytest.mark.unit
+def test_validate_behaviors_rejects_human_validation_without_emails_or_title() -> None:
+    problems, _ = validate_behaviors_against_pipe(
+        [_behavior_with_action("human_validation", {})],
+        pipe_id=EXAMPLE_PIPE_ID,
+        pipe_field_ids=set(),
+        pipe_phase_ids=set(),
+        related_pipe_ids=set(),
+    )
+    assert len(problems) == 1
+    assert "human_validation" in problems[0]
+
+
+@pytest.mark.unit
+def test_validate_behaviors_accepts_human_validation_with_either_key() -> None:
+    for metadata in ({"emails": ["a@b.com"]}, {"title": "Approve?"}):
+        problems, _ = validate_behaviors_against_pipe(
+            [_behavior_with_action("human_validation", metadata)],
+            pipe_id=EXAMPLE_PIPE_ID,
+            pipe_field_ids=set(),
+            pipe_phase_ids=set(),
+            related_pipe_ids=set(),
+        )
+        assert problems == []
+
+
+@pytest.mark.unit
+def test_validate_behaviors_rejects_mcp_tool_missing_keys() -> None:
+    problems, _ = validate_behaviors_against_pipe(
+        [_behavior_with_action("mcp_tool", {"mcpServerId": "srv1"})],
+        pipe_id=EXAMPLE_PIPE_ID,
+        pipe_field_ids=set(),
+        pipe_phase_ids=set(),
+        related_pipe_ids=set(),
+    )
+    assert len(problems) == 1
+    assert "mcp_tool" in problems[0]
+    assert "toolName" in problems[0]
+
+
+@pytest.mark.unit
+def test_validate_behaviors_accepts_mcp_tool_with_both_keys() -> None:
+    problems, _ = validate_behaviors_against_pipe(
+        [
+            _behavior_with_action(
+                "mcp_tool", {"mcpServerId": "srv1", "toolName": "search"}
+            )
+        ],
+        pipe_id=EXAMPLE_PIPE_ID,
+        pipe_field_ids=set(),
+        pipe_phase_ids=set(),
+        related_pipe_ids=set(),
+    )
+    assert problems == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_fetch_pipe_validation_context_returns_automation_event_ids() -> None:
+    client = AsyncMock()
+    client.get_pipe = AsyncMock(
+        return_value={"pipe": {"id": EXAMPLE_PIPE_ID, "phases": []}}
+    )
+    client.get_pipe_relations = AsyncMock(
+        return_value={"pipe": {"childrenRelations": [], "parentsRelations": []}}
+    )
+    client.get_phase_fields = AsyncMock(return_value={"fields": []})
+    client.get_automation_events = AsyncMock(
+        return_value=[{"id": "card_created"}, {"id": "card_moved"}]
+    )
+
+    _, _, _, pipe_event_ids, _ = await fetch_pipe_validation_context(
+        client, EXAMPLE_PIPE_ID, timeout=5
+    )
+    assert pipe_event_ids == {"card_created", "card_moved"}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_fetch_pipe_validation_context_returns_none_when_events_fail() -> None:
+    client = AsyncMock()
+    client.get_pipe = AsyncMock(
+        return_value={"pipe": {"id": EXAMPLE_PIPE_ID, "phases": []}}
+    )
+    client.get_pipe_relations = AsyncMock(
+        return_value={"pipe": {"childrenRelations": [], "parentsRelations": []}}
+    )
+    client.get_phase_fields = AsyncMock(return_value={"fields": []})
+    client.get_automation_events = AsyncMock(side_effect=RuntimeError("denied"))
+
+    _, _, _, pipe_event_ids, _ = await fetch_pipe_validation_context(
+        client, EXAMPLE_PIPE_ID, timeout=5
+    )
+    assert pipe_event_ids is None
