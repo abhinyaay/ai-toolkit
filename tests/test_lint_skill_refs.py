@@ -168,6 +168,10 @@ def test_valid_references_pass_without_linting_unrelated_docs(catalog):
             "Run `pipefy pipe list --name=Ops --jsn`.\n",
             "unknown option `--jsn` for `pipefy pipe list`",
         ),
+        (
+            "| `pipefy pipe get <PIPE_ID> --jsn` |\n",
+            "unknown option `--jsn` for `pipefy pipe get`",
+        ),
     ],
 )
 def test_invalid_cli_command_or_option_fails(catalog, capsys, content, error):
@@ -183,7 +187,9 @@ def test_valid_cli_invocations_with_options_pass(catalog):
     reference.parent.mkdir()
     reference.write_text(
         "Run `pipefy pipe list --name Ops -j` or `pipefy pipe`.\n"
-        "```bash\npipefy pipe get 123 --json > pipe.json\n```\n"
+        "| `pipefy pipe get <PIPE_ID> --json` |\n"
+        "```bash\npipefy pipe get 123 --json > pipe.json\n"
+        "pipefy pipe get 1 < in.json --jsn\n```\n"
     )
     assert _lint.main() == 0
 

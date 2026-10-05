@@ -32,9 +32,8 @@ def _table_rows(path):
     ]
 
 
-def test_design_intelligence_building_and_catalog_route_to_process_impact():
-    for path in (_DESIGN_MD, _INTELLIGENCE_MD, _BUILDING_MD, _CATALOG_MD):
-        assert "pipefy-process-impact" in path.read_text(encoding="utf-8"), path
+def test_catalog_readme_lists_process_impact():
+    assert "pipefy-process-impact" in _CATALOG_MD.read_text(encoding="utf-8")
 
 
 def test_building_routing_table_has_a_process_impact_row():

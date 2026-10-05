@@ -37,8 +37,8 @@ FENCED_OPERATION_RE = re.compile(r"^([a-z][a-z0-9]*_[a-z0-9_]+)(?=\s|\()")
 ARGUMENT_NAME_RE = re.compile(r"([a-z_][a-z0-9_]*)=")
 CODE_SPAN_RE = re.compile(r"`([^`]*)`")
 CLI_WORD_RE = re.compile(r"[a-z][a-z0-9-]*")
-# Shell syntax that ends a ``pipefy`` invocation inside a code example.
-_SHELL_STOP_PREFIXES = ("|", "&", ";", ">", "<", "2>")
+# Shell syntax that ends a ``pipefy`` invocation; a bare ``<`` too, but ``<PLACEHOLDER>`` is an argument.
+_SHELL_STOP_PREFIXES = ("|", "&", ";", ">", "2>")
 
 PIPEFY_INVOCATION_RE = re.compile(
     r"(?<![A-Za-z0-9])pipefy\s+([a-z][a-z0-9-]*)\b",
@@ -210,7 +210,7 @@ def _cli_errors(invocation: str, tree: CliTree, *, walk: bool) -> list[str]:
         return []
     errors: list[str] = []
     for token in rest:
-        if token.startswith(_SHELL_STOP_PREFIXES):
+        if token == "<" or token.startswith(_SHELL_STOP_PREFIXES):
             break
         option = token.split("=", 1)[0]
         if option.startswith("--") and option not in node:
