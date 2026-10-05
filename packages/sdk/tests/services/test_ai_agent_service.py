@@ -854,7 +854,7 @@ async def test_update_agent_missing_uuid_returns_clear_error():
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_create_agent_null_uuid_returns_clear_error():
-    """create_agent rejects a null agent.uuid instead of returning "None"."""
+    """create_agent rejects a null agent.uuid."""
     service, _ = _create_mock_service({"createAiAgent": {"agent": {"uuid": None}}})
     inp = CreateAiAgentInput(
         name="Test",
@@ -870,7 +870,7 @@ async def test_create_agent_null_uuid_returns_clear_error():
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_update_agent_null_uuid_returns_clear_error():
-    """update_agent rejects a null agent.uuid instead of returning "None"."""
+    """update_agent rejects a null agent.uuid."""
     service, _ = _create_mock_service(
         side_effect=[
             {"aiAgent": {"uuid": "agent-uuid", "disabledAt": None}},
