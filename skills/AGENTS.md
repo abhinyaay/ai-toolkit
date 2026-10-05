@@ -155,11 +155,7 @@ When a skill needs stable URLs into this repo’s Markdown:
 Skills and tools live in the same monorepo. When a CLI command or MCP tool is renamed:
 
 1. Update the skill reference in the same PR (or a paired PR opened in the same review window).
-2. The `skills-lint.yml` CI job validates frontmatter on every `skills/**/SKILL.md`
-   and lints operation names against each entrypoint's declared SDK/MCP surfaces.
-   MCP references must name MCP tools; CLI references are checked for known
-   operation names and `pipefy` root commands. A rename that doesn't update the
-   skill fails the build.
+2. The `skills-lint.yml` CI job validates frontmatter on every `skills/**/SKILL.md` and lints operation names against each entrypoint's declared SDK/MCP surfaces. MCP references must name MCP tools and their argument names; a `name=` argument in a `SKILL.md` example must exist on the MCP tool or the `PipefyClient` method. Every `pipefy` invocation written as code (inline code or a fenced block) must resolve to a real subcommand path, with `--` options that exist on that command; `pipefy` in plain prose is checked for the root command only. A rename that doesn't update the skill fails the build.
 
 ---
 
