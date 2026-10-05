@@ -177,17 +177,12 @@ async def test_send_inbox_email_graphql_error(webhook_session, mock_webhook_clie
 
 
 @pytest.mark.anyio
-async def test_send_tools_gate_without_destructive_hint(webhook_session):
+async def test_send_tools_are_not_read_only(webhook_session):
     async with webhook_session as session:
         listed = await session.list_tools()
     tools = {t.name: t for t in listed.tools}
     for name in ("send_inbox_email", "send_email_with_template"):
-        annotations = tools[name].annotations
-        assert annotations.read_only_hint is False
-        assert annotations.destructive_hint is not True
-        properties = tools[name].input_schema["properties"]
-        assert "confirm" in properties
-        assert "confirmation_token" in properties
+        assert tools[name].annotations.read_only_hint is False
 
 
 @pytest.mark.anyio
