@@ -46,7 +46,7 @@ Pick the cheapest mode that answers the question:
 | **Impact case** | The user asked to justify the change or to go deeper on the numbers. | None. Use the conversation context plus stated assumptions. |
 | **Diagnosis** | The user asked to measure *this pipe*, or `pipefy-process-intelligence` is already running. | Reuse round 1 of `pipefy-process-intelligence`. Do not repeat that investigation here. |
 
-`get_card`, `get_cards` and `find_cards` do **not** return `created_at` or `updated_at`. Do not derive lead time from those operations.
+`get_card`, `get_cards` and `find_cards` do **not** return `created_at` or `updated_at`. Do not derive lead time from those operations. A pipe report export has those dates, plus `finished_at` and the time each card spent in each phase (see `pipefy-reports`). Offer it when the user wants lead time or weekly volume measured, and run it only once they agree.
 
 ---
 
@@ -79,8 +79,8 @@ Usage and credit totals, if the user already wants them in the case, are in `pip
 
 | Axis | Without a diagnosis | With round 1 of `pipefy-process-intelligence` | Ask the user |
 |------|---------------------|-----------------------------------------------|--------------|
-| Time people spend operating the pipe | Count visible manual hops (phase with no automation, human triage) | Composition: which hops look manual. A card sample is not weekly volume. `phases[].cards_count` is live WIP and bottleneck inventory, not duration | Minutes per hop; cases per week, unless a dated throughput source is already in context |
-| Lead time (from card creation to done) | Do not invent a number | Not measured unless dates are already in this round's context | "How long does a case take today, end to end?" |
+| Time people spend operating the pipe | Count visible manual hops (phase with no automation, human triage) | Composition: which hops look manual. A card sample is not weekly volume. `phases[].cards_count` is live WIP and bottleneck inventory, not duration | Minutes per hop; cases per week, unless a dated source is already in context (a pipe report export: cards per week by `created_at`) |
+| Lead time (from card creation to done) | Do not invent a number | Not measured unless dates are already in this round's context | "How long does a case take today, end to end?", or offer a pipe report export (`finished_at` minus `created_at` on done cards) |
 | Cost / capacity | Hours returned to the team | Same, with measured volume | Hourly cost is **optional**. Money only when they give it |
 | Revenue | Omit | Omit unless the user confirms this process sits on the path to revenue (quotes, onboarding, billing) | Ticket, conversion, or that confirmation |
 
@@ -164,7 +164,7 @@ Add a revenue line only when the user confirmed the process sits on the path to 
 | Symptom | Likely cause | Recovery |
 |---------|--------------|----------|
 | User wants a money ROI | No hourly cost in context | Ask for it; otherwise stop at hours returned |
-| User wants lead time | Card reads have no timestamps | Ask for today's cycle; omit the number if they do not give one |
+| User wants lead time | Card reads have no timestamps | Ask for today's cycle, or offer a pipe report export; omit the number if neither is available |
 | Permission error listing AI agents | Numeric pipe id passed to `get_ai_agents` | Read `uuid` from `get_pipe` and pass it as `repo_uuid` |
 | Quiet / unused pipe | Process never launched | Reactivate or connect; cover hops with automations or AI agents if they fit. Do not delete unless asked |
 | User asks to cut credits or leave Pipefy | Out of scope | Stay on process impact; do not recommend moving work off the pipe |

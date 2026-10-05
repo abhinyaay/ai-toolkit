@@ -48,7 +48,7 @@ The user asks to analyze or improve an existing process:
 
    Operation: `get_cards pipe_id=<id> first=50 include_fields=true`
 
-   Look for: stale cards (no updates), cards stuck in early phases, phases with 0 cards.
+   Look for: cards piling up in early phases, phases with 0 cards, fields left empty. Card reads return no dates, so they cannot show which cards are stale; see the note under the diagnosis framework.
 
 3. **Check automations:**
 
@@ -65,6 +65,8 @@ The user asks to analyze or improve an existing process:
 ---
 
 ## Diagnosis framework
+
+Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `get_pipe` and `get_cards` do not return. Measure them with a pipe report export (`pipefy-reports`): its columns include `created_at`, `finished_at`, `updated_at`, and a "Total time in <phase>" column per phase, listed by `get_pipe_report_columns`. Without an export, ask the user; do not infer time from `cards_count` or a card sample.
 
 | Signal | Opportunity |
 |--------|-------------|
