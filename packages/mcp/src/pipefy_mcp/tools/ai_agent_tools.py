@@ -123,6 +123,7 @@ class AiAgentTools:
                     field_ids,
                     phase_ids,
                     related_pipe_ids,
+                    pipe_event_ids,
                     _fetch_warnings,
                 ) = await fetch_pipe_validation_context(
                     client,
@@ -136,6 +137,7 @@ class AiAgentTools:
                     pipe_field_ids=field_ids,
                     pipe_phase_ids=phase_ids,
                     related_pipe_ids=related_pipe_ids,
+                    pipe_event_ids=pipe_event_ids,
                     unknown_action_types="error",
                 )
                 transition_problems = (
