@@ -122,7 +122,7 @@ Each round focuses on 1–2 improvements; report results before proceeding.
 - [Opportunity]: [proposed action]
 ```
 
-Keep Impact to one line. Do not invent volume, hourly cost, or lead time. For a fuller justification, read `pipefy-process-impact`. Do not recommend deleting a pipe.
+Keep Impact to one line. Do not invent volume, hourly cost, or lead time; name a missing number and ask for it. For a fuller justification, read `pipefy-process-impact`. Do not recommend deleting a pipe.
 
 ---
 

@@ -108,7 +108,7 @@ Impact: [one line: time this design returns to the team against a fully manual r
 Next step: [execute with pipes-and-cards skill? or more questions?]
 ```
 
-Keep Impact to one line. Do not invent volume, hourly cost, or lead time. For a fuller justification, read `pipefy-process-impact`.
+Keep Impact to one line. Do not invent volume, hourly cost, or lead time; name a missing number and ask for it. For a fuller justification, read `pipefy-process-impact`.
 
 ---
 

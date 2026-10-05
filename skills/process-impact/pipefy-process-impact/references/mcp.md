@@ -1,6 +1,6 @@
 # MCP reference
 
-Only Diagnosis mode makes calls, and it follows round 1 of `pipefy-process-intelligence`. Its MCP reference has the full invocation list.
+Diagnosis mode follows round 1 of `pipefy-process-intelligence`, whose MCP reference has the full invocation list. An Impact case only runs the coverage check: `get_pipe`, `get_automations`, `get_ai_agents`, `get_ai_agent`.
 
 ## Invocation examples
 
@@ -12,6 +12,12 @@ Keep both `pipe.id` and `pipe.uuid` from the response.
 
 ```text
 get_ai_agents repo_uuid=<pipe.uuid>
+```
+
+For each active agent, read its behaviors:
+
+```text
+get_ai_agent uuid=<agent.uuid>
 ```
 
 ```text

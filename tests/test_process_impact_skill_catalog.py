@@ -15,7 +15,8 @@ _BUILDING_MD = _SKILLS / "building" / "pipefy-building" / "SKILL.md"
 _CATALOG_MD = _SKILLS / "README.md"
 
 _IMPACT_GUIDANCE = (
-    "Keep Impact to one line. Do not invent volume, hourly cost, or lead time. "
+    "Keep Impact to one line. Do not invent volume, hourly cost, or lead time; "
+    "name a missing number and ask for it. "
     "For a fuller justification, read `pipefy-process-impact`."
 )
 _HEADCOUNT_CUT_TERMS = re.compile(r"headcount|layoff|upsell|\bfte\b")

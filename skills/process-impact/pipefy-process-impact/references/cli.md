@@ -1,6 +1,6 @@
 # CLI reference
 
-Only Diagnosis mode makes calls, and it follows round 1 of `pipefy-process-intelligence`.
+Diagnosis mode follows round 1 of `pipefy-process-intelligence`; an Impact case only runs the coverage check (`get_pipe`, `get_automations`, `get_ai_agents`, `get_ai_agent`).
 
 | Operation | Command |
 |-----------|---------|
@@ -9,5 +9,6 @@ Only Diagnosis mode makes calls, and it follows round 1 of `pipefy-process-intel
 | `get_cards` | `pipefy card list --pipe <PIPE_ID> --include-fields` |
 | `get_automations` | `pipefy automation list --pipe <PIPE_ID>` |
 | `get_ai_agents` | `pipefy agent list --repo <PIPE_UUID>` |
+| `get_ai_agent` | `pipefy agent get <AGENT_UUID>` |
 
 `--repo` takes the pipe UUID that `pipefy pipe get` returns, not the numeric pipe id.

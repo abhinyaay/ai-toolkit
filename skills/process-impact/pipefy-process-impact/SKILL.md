@@ -43,23 +43,23 @@ Pick the cheapest mode that answers the question:
 | Mode | When | Extra calls |
 |------|------|-------------|
 | **Impact line** | Default. `pipefy-process-design` and `pipefy-process-intelligence` already emit one in their output. | None |
-| **Impact case** | The user asked to justify the change or to go deeper on the numbers. | None. Use the conversation context plus stated assumptions. |
+| **Impact case** | The user asked to justify the change or to go deeper on the numbers. | None beyond a coverage check when the user names a pipe: `get_pipe`, `get_automations`, `get_ai_agents`, and `get_ai_agent` for each active agent, to see whether something already covers the hop. No card sample, no export. |
 | **Diagnosis** | The user asked to measure *this pipe*, or `pipefy-process-intelligence` is already running. | Reuse round 1 of `pipefy-process-intelligence`. Do not repeat that investigation here. |
 
-`get_card`, `get_cards` and `find_cards` do **not** return `created_at` or `updated_at`. Do not derive lead time from those operations. A pipe report export has those dates, plus `finished_at` and the time each card spent in each phase (see `pipefy-reports`). Offer it when the user wants lead time or weekly volume measured, and run it only once they agree.
+`get_card`, `get_cards` and `find_cards` do **not** return `created_at` or `updated_at`. Do not derive lead time from those operations. A pipe report export has those dates, plus `finished_at` and the time each card spent in each phase (see `pipefy-reports`). Run it when the user asked you to measure lead time or weekly volume; otherwise offer it and run it once they agree.
 
 ---
 
 ## Prerequisites
 
 - A proposed or existing change in view (phase, automation, AI agent, iPaaS, or a new process design).
-- Diagnosis only: the pipe id, and the pipe `uuid` that `get_pipe` returns, for `get_ai_agents`.
+- Diagnosis or a coverage check: the pipe id, and the pipe `uuid` that `get_pipe` returns, for `get_ai_agents`.
 
 ---
 
 ## Tools needed
 
-Only in **Diagnosis** mode, and only by following round 1 of `pipefy-process-intelligence`. Do not call them for an Impact line or an Impact case.
+In **Diagnosis** mode, by following round 1 of `pipefy-process-intelligence`; in an **Impact case**, only the coverage check above. An Impact line makes no calls.
 
 | Operation | Read-only | Purpose |
 |-----------|-----------|---------|
@@ -67,7 +67,8 @@ Only in **Diagnosis** mode, and only by following round 1 of `pipefy-process-int
 | `get_pipe` | Yes | Phases, `cards_count` per phase, and the pipe `uuid` |
 | `get_cards` | Yes | A card sample that shows which hops look manual |
 | `get_automations` | Yes | Hops that already have an automation |
-| `get_ai_agents` | Yes | AI agents that already run on the pipe |
+| `get_ai_agents` | Yes | AI agents on the pipe, active or disabled |
+| `get_ai_agent` | Yes | Behaviors of an active agent: which phases it acts on and what it does there |
 
 `get_ai_agents` takes the pipe **UUID**, not the numeric pipe id. Call `get_pipe` first, then `get_ai_agents repo_uuid=<pipe.uuid>`. A numeric id returns a permission error: the id type is wrong, the access is not.
 
@@ -79,7 +80,7 @@ Usage and credit totals, if the user already wants them in the case, are in `pip
 
 | Axis | Without a diagnosis | With round 1 of `pipefy-process-intelligence` | Ask the user |
 |------|---------------------|-----------------------------------------------|--------------|
-| Time people spend operating the pipe | Count visible manual hops (phase with no automation, human triage) | Composition: which hops look manual. A card sample is not weekly volume. `phases[].cards_count` is live WIP and bottleneck inventory, not duration | Minutes per hop; cases per week, unless a dated source is already in context (a pipe report export: cards per week by `created_at`) |
+| Time people spend operating the pipe | Count visible manual hops (phase with no automation, human triage) | Composition: which hops look manual. A card sample is not weekly volume. `phases[].cards_count` is live WIP and bottleneck inventory, not duration. Its sum includes the done phase and leaves out the start form, so it is not the number of open cases | Minutes per hop; cases per week, unless a dated source is already in context (a pipe report export: cards per week by `created_at`) |
 | Lead time (from card creation to done) | Do not invent a number | Not measured unless dates are already in this round's context | "How long does a case take today, end to end?", or offer a pipe report export (`finished_at` minus `created_at` on done cards) |
 | Cost / capacity | Hours returned to the team | Same, with measured volume | Hourly cost is **optional**. Money only when they give it |
 | Revenue | Omit | Omit unless the user confirms this process sits on the path to revenue (quotes, onboarding, billing) | Ticket, conversion, or that confirmation |
@@ -119,7 +120,7 @@ Do not recommend a capability the evidence does not support.
 ## Steps
 
 1. **Choose the mode**: Impact line, Impact case, or Diagnosis (table above). For a diagnosis, reuse round 1 of `pipefy-process-intelligence` only; do not start round 2+ from this skill. If the user asked to analyze **and** improve, `pipefy-process-intelligence` owns implementation after they approve a round.
-2. **Name the current hop**: what people do in the pipe today for this change (manual move, triage, copy-paste, waiting).
+2. **Name the current hop**: what people do in the pipe today for this change (manual move, triage, copy-paste, waiting). Before you call a hop manual, check what already covers it: an active automation, or an active AI agent whose behaviors act on that phase. If something covers it, say so; the question becomes whether that coverage pays off, not whether to add a second one.
 3. **Write the ladder**: minimum step and optional next step, each with time returned (formula). Lead time only with a cycle the user stated or dates already in context.
 4. **Ask only for missing assumptions**: minutes per hop, weekly volume, hourly cost. One question, not a survey.
 5. **Point to implementation**: which domain skill builds the chosen rung. Do not implement from this skill.
@@ -166,6 +167,7 @@ Add a revenue line only when the user confirmed the process sits on the path to 
 | User wants a money ROI | No hourly cost in context | Ask for it; otherwise stop at hours returned |
 | User wants lead time | Card reads have no timestamps | Ask for today's cycle, or offer a pipe report export; omit the number if neither is available |
 | Permission error listing AI agents | Numeric pipe id passed to `get_ai_agents` | Read `uuid` from `get_pipe` and pass it as `repo_uuid` |
+| Proposed step duplicates what runs today | An active agent or automation already acts on the hop | Read the agent's behaviors with `get_ai_agent`; size the existing coverage instead of adding a second one |
 | Quiet / unused pipe | Process never launched | Reactivate or connect; cover hops with automations or AI agents if they fit. Do not delete unless asked |
 | User asks to cut credits or leave Pipefy | Out of scope | Stay on process impact; do not recommend moving work off the pipe |
 
