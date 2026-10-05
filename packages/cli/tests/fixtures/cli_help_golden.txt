@@ -3677,7 +3677,9 @@ Usage: pipefy report-pipe export [OPTIONS]
 │                                   [default: json]                            │
 │    --sort-by               TEXT   JSON ReportSortDirectionInput.             │
 │    --filter                TEXT                                              │
-│    --columns               TEXT   JSON array of column ids.                  │
+│    --columns               TEXT   JSON array of column names from            │
+│                                   report-pipe columns; date columns appear   │
+│                                   only when named here.                      │
 │    --poll-timeout          FLOAT  Seconds to poll export status before       │
 │                                   failing (CSV only).                        │
 │                                   [default: 90.0]                            │
