@@ -639,7 +639,7 @@ class TestUpdateAiAgent:
         mock_pipefy_client,
         extract_payload,
     ):
-        """Empty human_validation metadata must not tell the caller to stop and blame the pipe."""
+        """Empty human_validation metadata is now named by the pre-flight (#729), and still never blames the pipe."""
         mock_pipefy_client.update_ai_agent.side_effect = PipefyGraphQLError(
             [{"message": "RECORD_NOT_SAVED"}]
         )
@@ -671,9 +671,15 @@ class TestUpdateAiAgent:
                     "behaviors": [behavior],
                 },
             )
-        _assert_record_not_saved_does_not_blame_the_pipe(
-            tool_error_message(extract_payload(result))
-        )
+        message = tool_error_message(extract_payload(result))
+        assert "RECORD_NOT_SAVED" in message
+        # The pre-flight now names the empty-metadata cause instead of leaving it
+        # unexplained, while still never blaming the pipe (#729).
+        assert "human_validation" in message
+        assert "emails" in message or "title" in message
+        assert "does not name the cause" not in message
+        assert "Do NOT retry" not in message
+        assert "issue is the pipe" not in message
 
     async def test_record_not_saved_with_invalid_payload_shows_problems(
         self,
@@ -2463,6 +2469,7 @@ class TestFetchPipeValidationContext:
             field_ids,
             phase_ids,
             related_pipe_ids,
+            _pipe_event_ids,
             fetch_warnings,
         ) = await fetch_pipe_validation_context(mock_pipefy_client, "42")
 
@@ -2495,6 +2502,7 @@ class TestFetchPipeValidationContext:
             field_ids,
             phase_ids,
             related_pipe_ids,
+            _pipe_event_ids,
             fetch_warnings,
         ) = await fetch_pipe_validation_context(mock_pipefy_client, "99")
 
@@ -2534,6 +2542,7 @@ class TestFetchPipeValidationContext:
             field_ids,
             phase_ids,
             related_pipe_ids,
+            _pipe_event_ids,
             fetch_warnings,
         ) = await fetch_pipe_validation_context(mock_pipefy_client, "1")
 
