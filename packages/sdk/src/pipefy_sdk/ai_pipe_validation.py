@@ -68,6 +68,7 @@ def validate_behaviors_against_pipe(
     pipe_phase_ids: set[str],
     related_pipe_ids: set[str] | None,
     cross_pipe_field_ids: dict[str, set[str]] | None = None,
+    pipe_event_ids: set[str] | None = None,
     unknown_action_types: Literal["error", "warning", "ignore"] = "error",
 ) -> tuple[list[str], list[str]]:
     """Check behaviors against resolved pipe context and return problems and warnings.
@@ -89,6 +90,10 @@ def validate_behaviors_against_pipe(
             target pipes referenced by cross-pipe actions. When provided,
             fieldIds targeting those pipes are validated against the map.
             When ``None`` (default), cross-pipe fieldIds are skipped.
+        pipe_event_ids: Set of automation event ids the source pipe offers (what
+            ``get_automation_events`` returns). Each behavior's ``eventId`` is
+            checked against it. ``None`` (default) or an empty set skips the check
+            (avoids false positives when events could not be enumerated).
         unknown_action_types: How to treat non-empty ``actionType`` values not in
             ``KNOWN_AI_ACTION_TYPES``: ``error`` adds to problems, ``warning``
             adds the same message to warnings, ``ignore`` skips.
@@ -115,6 +120,14 @@ def validate_behaviors_against_pipe(
                 f'{prefix}: eventParams.to_phase_id "{to_phase}" '
                 f"not found in pipe phases."
             )
+
+        if pipe_event_ids:
+            event_id = payload.event_id if payload else None
+            if event_id and str(event_id) not in pipe_event_ids:
+                problems.append(
+                    f'{prefix}: eventId "{event_id}" is not an automation event '
+                    f"for this pipe. Valid events: {sorted(pipe_event_ids)}."
+                )
 
         for j, action in enumerate(attrs):
             action_type = action.action_type or ""
@@ -182,6 +195,30 @@ def validate_behaviors_against_pipe(
                         f'pipeId "{target_pipe}" has no relation with the '
                         f"source pipe. Create a pipe relation first "
                         f"(get_pipe_relations / create_pipe_relation)."
+                    )
+
+            if action_type == "human_validation":
+                extra = metadata.model_extra or {}
+                if not extra.get("emails") and not extra.get("title"):
+                    problems.append(
+                        f"{prefix}, action [{j}] (human_validation): metadata "
+                        'needs at least one of "emails" or "title".'
+                    )
+
+            if action_type == "mcp_tool":
+                extra = metadata.model_extra or {}
+                missing = [
+                    key
+                    for key, alt in (
+                        ("mcpServerId", "mcp_server_id"),
+                        ("toolName", "tool_name"),
+                    )
+                    if not extra.get(key) and not extra.get(alt)
+                ]
+                if missing:
+                    problems.append(
+                        f"{prefix}, action [{j}] (mcp_tool): metadata is missing "
+                        f"{missing}."
                     )
 
     return problems, warnings
@@ -548,7 +585,7 @@ async def fetch_pipe_validation_context(
     pipe_id: str,
     *,
     timeout: float = 30,
-) -> tuple[set[str], set[str], set[str] | None, list[str]]:
+) -> tuple[set[str], set[str], set[str] | None, set[str] | None, list[str]]:
     """Fetch pipe phases, fields, and relations for behavior validation.
 
     Exceptions from ``get_pipe`` propagate to the caller (e.g. TimeoutError,
@@ -561,9 +598,12 @@ async def fetch_pipe_validation_context(
         timeout: Timeout in seconds for each API call.
 
     Returns:
-        Tuple of ``(field_ids, phase_ids, related_pipe_ids, fetch_warnings)``.
-        ``related_pipe_ids`` is None when relations could not be loaded.
-        ``fetch_warnings`` lists incomplete phase field loads for the source pipe.
+        Tuple of ``(field_ids, phase_ids, related_pipe_ids, pipe_event_ids,
+        fetch_warnings)``. ``related_pipe_ids`` is None when relations could not
+        be loaded. ``pipe_event_ids`` is the set of automation event ids the pipe
+        offers, or None when ``get_automation_events`` could not be loaded (the
+        caller skips the eventId check in that case). ``fetch_warnings`` lists
+        incomplete phase field loads for the source pipe.
     """
     pipe_data = await asyncio.wait_for(
         client.get_pipe(pipe_id),
@@ -605,7 +645,24 @@ async def fetch_pipe_validation_context(
     except Exception:  # noqa: BLE001
         related_pipe_ids = None
 
-    return field_ids, phase_ids, related_pipe_ids, fetch_warnings
+    pipe_event_ids: set[str] | None
+    try:
+        events = await asyncio.wait_for(
+            client.get_automation_events(pipe_id),
+            timeout=timeout,
+        )
+        pipe_event_ids = {
+            str(e.get("id", "")) for e in events if isinstance(e, dict) and e.get("id")
+        }
+    except Exception:  # noqa: BLE001
+        logger.debug(
+            "Could not load automation events for pipe %s; eventId checks skipped",
+            pipe_id,
+            exc_info=True,
+        )
+        pipe_event_ids = None
+
+    return field_ids, phase_ids, related_pipe_ids, pipe_event_ids, fetch_warnings
 
 
 __all__ = [
