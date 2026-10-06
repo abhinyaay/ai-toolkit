@@ -104,8 +104,11 @@ Phases: [list]
 Start form fields: [list with types]
 Key automations: [list]
 Related processes: [list or "none"]
+Impact: [one line: time this design returns to the team against a fully manual run of the same flow; if a phase exists only for human triage, what an automation or an AI agent would change there. Do not start a pipe diagnosis.]
 Next step: [execute with pipes-and-cards skill? or more questions?]
 ```
+
+Keep Impact to one line. Do not invent volume, hourly cost, or lead time; name every missing number and ask for all of them in one question. For a fuller justification, read `pipefy-process-impact`.
 
 ---
 
@@ -121,3 +124,4 @@ Next step: [execute with pipes-and-cards skill? or more questions?]
 - `pipefy-pipes-and-cards` — execute the design once finalized.
 - `pipefy-automations` — add automation rules to the new pipe.
 - `pipefy-process-intelligence` — analyze an existing process for improvement (distinct from designing new).
+- `pipefy-process-impact` to justify a material change in full; this skill only emits the Impact line.

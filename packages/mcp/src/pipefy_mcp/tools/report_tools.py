@@ -580,7 +580,7 @@ class ReportTools:
                 organization_id: Organization ID.
                 name: Report name.
                 pipe_ids: List of pipe IDs to include.
-                fields: Column field IDs.
+                fields: Column ``name`` values (internal names, not labels).
                 filter: Report filter (ReportCardsFilter shape).
                 debug: When True, append GraphQL codes and correlation_id to errors.
             """
@@ -638,7 +638,7 @@ class ReportTools:
                 report_id: Organization report ID.
                 name: New report name.
                 color: Report color.
-                fields: Column field IDs.
+                fields: Column ``name`` values (internal names, not labels).
                 filter: Report filter (ReportCardsFilter shape).
                 pipe_ids: Pipe IDs to include.
                 debug: When True, append GraphQL codes and correlation_id to errors.
@@ -751,7 +751,7 @@ class ReportTools:
                 pipe_report_id: Pipe report ID to export.
                 sort_by: ReportSortDirectionInput (direction, field).
                 filter: ReportCardsFilter shape.
-                columns: Column field IDs for the export file.
+                columns: Column ``name`` values from ``get_pipe_report_columns`` to include in the file; date columns appear only when named here.
                 debug: When True, append GraphQL codes and correlation_id to errors.
             """
             client = get_pipefy_client(ctx)
@@ -811,7 +811,7 @@ class ReportTools:
                 pipe_ids: Pipe IDs to scope the export.
                 sort_by: ReportSortDirectionInput.
                 filter: ReportCardsFilter shape.
-                columns: Column field IDs for the export file.
+                columns: Column ``name`` values (internal names, not labels) to include in the file; date columns appear only when named here.
                 debug: When True, append GraphQL codes and correlation_id to errors.
             """
             client = get_pipefy_client(ctx)

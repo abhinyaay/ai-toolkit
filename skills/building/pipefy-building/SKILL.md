@@ -24,6 +24,7 @@ If the user already has a building skill or a detailed build prompt/spec, use th
 | User intent (examples) | Read |
 |------------------------|------|
 | Design / architecture / "help me structure this process" | `pipefy-process-design` (consulting only) |
+| Impact / ROI / "is this change worth it?" / justify internally | `pipefy-process-impact` (consulting; do not implement from there) |
 | Pipes, phases, fields, labels, cards, field conditions | `pipefy-pipes-and-cards` |
 | Traditional or AI automations (if/then, prompt-driven rules) | `pipefy-automations` |
 | Conversational AI agents and behaviors | `pipefy-ai-agents` |
@@ -47,4 +48,5 @@ Hard stops and quirks (phase connections UI-only, email template create/edit UI-
 ## See also
 
 - `pipefy-process-design` — consulting when the ask is design, not build.
+- `pipefy-process-impact` for consulting when the ask is impact, ROI, or justification, not build.
 - [skills/README.md](https://github.com/pipefy/ai-toolkit/blob/main/skills/README.md) — full catalog.
