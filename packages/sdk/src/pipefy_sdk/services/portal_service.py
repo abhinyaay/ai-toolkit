@@ -207,6 +207,33 @@ def _normalize_portal_detail(portal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _stored_element(
+    portal: dict[str, Any], *, portal_uuid: str, page_id: str, element_id: str
+) -> dict[str, Any]:
+    """Return element ``element_id`` from page ``page_id`` of a ``get_portal`` payload.
+
+    Raises:
+        ValueError: The element is on another page, or on no page of the portal.
+    """
+    for page in portal["pages"]:
+        for element in page["elements"]:
+            if element["id"] != element_id:
+                continue
+            if page["id"] == page_id:
+                return element
+            msg = (
+                f"Element '{element_id}' is on page '{page['id']}' of portal "
+                f"'{portal_uuid}', not on page '{page_id}'. "
+                f"Pass page_id='{page['id']}'."
+            )
+            raise ValueError(msg)
+    msg = (
+        f"Element '{element_id}' is on no page of portal '{portal_uuid}'. "
+        "Check portal_uuid and element_id, or pass data_sources to skip the read."
+    )
+    raise ValueError(msg)
+
+
 class PortalService:
     """GraphQL operations for Pipefy portals across multiple endpoints.
 
@@ -591,15 +618,22 @@ class PortalService:
             type: Element type for client-side metadata validation only.
             metadata: Complete metadata blob (Pipefy replaces the whole object).
             data_sources: Data source bindings that replace the element's list;
-                ``[]`` unlinks them all. Omit to keep the current ones.
+                ``[]`` unlinks them all. Omit, with ``portal_uuid``, to keep the
+                current ones. A caller already holding the element from
+                ``get_portal`` can pass its ``dataSources`` here (and its
+                ``editable``) to skip the second read.
             portal_uuid: Portal holding the element. Required when ``data_sources``
-                is omitted: the current data sources are read from ``get_portal``
-                and sent back.
-            editable: Optional editable flag.
+                is omitted: the element's ``dataSources`` (``repoId`` and
+                ``fieldKeys``) and, unless ``editable`` is given, its ``editable``
+                flag are read from ``get_portal`` and sent back.
+            editable: Editable flag. The API rejects an update whose data sources
+                list ``fieldKeys`` without it; the keep path sends the stored one.
 
         Raises:
             ValueError: ``data_sources`` and ``portal_uuid`` are both omitted, or
-                the portal has no element ``element_id`` on page ``page_id``.
+                the element is not on page ``page_id`` of the portal.
+            PipefyGraphQLError: Reading the portal failed (no update is sent).
+            PortalPermissionError: The caller may not update the element.
         """
         validated = UpdatePortalElementInput.model_validate(
             {
@@ -613,9 +647,16 @@ class PortalService:
             }
         )
         if validated.data_sources is None:
-            validated = validated.model_copy(
-                update={"data_sources": await self._current_data_sources(validated)}
+            stored = _stored_element(
+                await self.get_portal(validated.portal_uuid),
+                portal_uuid=validated.portal_uuid,
+                page_id=validated.page_id,
+                element_id=validated.element_id,
             )
+            kept: dict[str, Any] = {"data_sources": stored["dataSources"]}
+            if validated.editable is None:
+                kept["editable"] = stored["editable"]
+            validated = validated.model_copy(update=kept)
         data = await _execute_query_with_portal_errors(
             self.execute_interfaces_query,
             UPDATE_ELEMENT_MUTATION,
@@ -635,27 +676,6 @@ class PortalService:
                 "metadata": validated.metadata,
             }
         )
-
-    async def _current_data_sources(
-        self, validated: UpdatePortalElementInput
-    ) -> list[dict[str, Any]]:
-        """Read the element's stored data sources from its portal.
-
-        Called only when ``data_sources`` was omitted, where the input model
-        guarantees ``portal_uuid``.
-        """
-        portal = await self.get_portal(validated.portal_uuid)
-        for page in portal["pages"]:
-            if page["id"] != validated.page_id:
-                continue
-            for element in page["elements"]:
-                if element["id"] == validated.element_id:
-                    return element.get("dataSources") or []
-        msg = (
-            f"Element '{validated.element_id}' was not found on page "
-            f"'{validated.page_id}' of portal '{validated.portal_uuid}'."
-        )
-        raise ValueError(msg)
 
     async def delete_portal_element(
         self,

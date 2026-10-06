@@ -45,6 +45,7 @@ GET_PORTAL_QUERY = gql(
                     id
                     type
                     metadata
+                    editable
                     dataSources {
                         repoId
                         repoName

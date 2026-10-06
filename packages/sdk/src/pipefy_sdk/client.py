@@ -2260,10 +2260,15 @@ class PipefyClient:
             type: Element type for metadata validation.
             metadata: Complete metadata blob.
             data_sources: Data source bindings that replace the element's list;
-                ``[]`` unlinks them all. Omit to keep the current ones.
+                ``[]`` unlinks them all. Omit, with ``portal_uuid``, to keep the
+                current ones; passing the ``dataSources`` already read from
+                ``get_portal`` skips the second read.
             portal_uuid: Portal holding the element; required when
-                ``data_sources`` is omitted.
-            editable: Optional editable flag.
+                ``data_sources`` is omitted. The keep path resends the element's
+                ``dataSources`` (``repoId`` and ``fieldKeys``) and, unless
+                ``editable`` is given, its ``editable`` flag.
+            editable: Editable flag; the API requires it when a data source lists
+                ``fieldKeys``.
         """
         return await self._portal_service.update_portal_element(
             element_id,

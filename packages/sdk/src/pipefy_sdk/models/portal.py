@@ -254,7 +254,8 @@ class UpdatePortalElementInput(BaseModel):
 
     ``data_sources`` is a full replace too, and the API rejects an update without
     it. Omitting it therefore needs ``portal_uuid``, so the element's current data
-    sources can be read and sent back; ``[]`` unlinks them all.
+    sources (``repoId`` and ``fieldKeys``) and ``editable`` flag can be read and sent
+    back; ``[]`` unlinks them all.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -268,7 +269,7 @@ class UpdatePortalElementInput(BaseModel):
         default=None,
         description=(
             "Portal holding the element; required when data_sources is omitted, "
-            "to keep the element's current data sources."
+            "to keep the element's current data sources and editable flag."
         ),
     )
     editable: bool | None = None
