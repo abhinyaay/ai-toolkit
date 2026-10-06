@@ -372,6 +372,7 @@ def try_enrich_graphql_error(
     resource_kind: str | None,
     resource_id: str | None,
     invalid_args_hint: str | None,
+    not_found_enrichment: bool = True,
 ) -> tuple[str, str] | None:
     """Run enrichment tiers. Returns ``(message, code)`` or ``None``.
 
@@ -388,13 +389,15 @@ def try_enrich_graphql_error(
         resource_kind: Optional canonical kind; opts into NOT_FOUND enrichment.
         resource_id: Optional resource id; surfaced in the enriched message.
         invalid_args_hint: Optional tool-specific hint for BAD_USER_INPUT errors.
+        not_found_enrichment: When False, skip the NOT_FOUND relabel but keep the
+            other tiers, for a mutation whose not-found errors name several resources.
     """
     first_code = codes[0] if codes else None
     enrichment_opted_in = resource_kind is not None or invalid_args_hint is not None
     if not enrichment_opted_in:
         return None
 
-    if resource_kind is not None:
+    if resource_kind is not None and not_found_enrichment:
         enriched = enrich_not_found_error(
             exc, resource_kind=resource_kind, resource_id=resource_id
         )
@@ -432,6 +435,7 @@ def handle_tool_graphql_error(
     resource_kind: str | None = None,
     resource_id: str | None = None,
     invalid_args_hint: str | None = None,
+    not_found_enrichment: bool = True,
 ) -> dict[str, Any]:
     """Turn transport/GraphQL failures into a structured :func:`tool_error` payload.
 
@@ -464,6 +468,7 @@ def handle_tool_graphql_error(
         resource_id: Optional resource id; surfaced in the enriched message.
         invalid_args_hint: Optional tool-specific hint for BAD_USER_INPUT
             errors; opts this call site into invalid-arguments enrichment.
+        not_found_enrichment: When False, skip only the NOT_FOUND relabel.
     """
     codes = extract_graphql_error_codes(exc)
     first_code = codes[0] if codes else None
@@ -477,6 +482,7 @@ def handle_tool_graphql_error(
         resource_kind=resource_kind,
         resource_id=resource_id,
         invalid_args_hint=invalid_args_hint,
+        not_found_enrichment=not_found_enrichment,
     )
     if enriched_result is not None:
         message, code = enriched_result

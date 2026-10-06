@@ -883,12 +883,15 @@ class PipeConfigTools:
                     **merged,
                 )
             except Exception as exc:  # noqa: BLE001
-                # No not-found enrichment: the API's RESOURCE_NOT_FOUND may name the
-                # phase, the field type, or the connected repo, and says which.
+                # The API's RESOURCE_NOT_FOUND names the phase, the field type, or the
+                # connected repo, so skip only the relabel to "Phase not found".
                 return handle_pipe_config_tool_graphql_error(
                     exc,
                     "Create phase field failed.",
                     debug=debug,
+                    resource_kind="phase",
+                    resource_id=str(phase_id),
+                    not_found_enrichment=False,
                 )
             return build_pipe_mutation_success_payload(
                 label="Phase field created.",

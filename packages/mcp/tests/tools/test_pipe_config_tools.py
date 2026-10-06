@@ -1922,6 +1922,47 @@ async def test_create_phase_field_not_found_keeps_the_api_message(
 
 
 @pytest.mark.anyio
+async def test_create_phase_field_permission_denied_keeps_the_access_hint(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    mock_pipe_config_client.create_phase_field.side_effect = PipefyGraphQLError(
+        [
+            {
+                "message": "Permission denied",
+                "extensions": {"code": "PERMISSION_DENIED"},
+            }
+        ]
+    )
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "create_phase_field",
+            {"phase_id": 999, "label": "L", "field_type": "short_text"},
+        )
+    payload = extract_payload(result)
+    assert payload["error"]["code"] == "PERMISSION_DENIED"
+    message = tool_error_message(payload)
+    assert message.startswith("Cannot access phase (ID: 999).")
+    assert "get_pipe_members" in message
+
+
+@pytest.mark.anyio
+async def test_create_phase_field_bad_user_input_keeps_the_hint(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    mock_pipe_config_client.create_phase_field.side_effect = PipefyGraphQLError(
+        [{"message": "Label is invalid", "extensions": {"code": "BAD_USER_INPUT"}}]
+    )
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "create_phase_field",
+            {"phase_id": 1, "label": "L", "field_type": "short_text"},
+        )
+    payload = extract_payload(result)
+    assert payload["error"]["code"] == "BAD_USER_INPUT"
+    assert tool_error_message(payload).startswith("Label is invalid Hint: ")
+
+
+@pytest.mark.anyio
 async def test_update_phase_field_graphql_error_returns_failure__no_integration(
     pipe_config_session, mock_pipe_config_client, extract_payload
 ):

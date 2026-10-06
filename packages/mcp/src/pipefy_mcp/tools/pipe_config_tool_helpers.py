@@ -75,6 +75,7 @@ def handle_pipe_config_tool_graphql_error(
     resource_kind: str | None = None,
     resource_id: str | None = None,
     invalid_args_hint: str | None = None,
+    not_found_enrichment: bool = True,
 ) -> dict[str, Any]:
     """Delegate to :func:`handle_tool_graphql_error` with enrichment opt-ins."""
     return handle_tool_graphql_error(
@@ -84,6 +85,7 @@ def handle_pipe_config_tool_graphql_error(
         resource_kind=resource_kind,
         resource_id=resource_id,
         invalid_args_hint=invalid_args_hint,
+        not_found_enrichment=not_found_enrichment,
     )
 
 
