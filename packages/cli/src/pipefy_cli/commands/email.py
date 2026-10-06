@@ -112,14 +112,7 @@ def email_inbox_send(
         _refuse_unconfirmed_send()
 
     async def factory(client: PipefyClient):
-        return await client.send_inbox_email(
-            draft.card_id,
-            list(draft.to),
-            draft.subject,
-            draft.body,
-            from_=draft.from_,
-            **draft.extra,
-        )
+        return await client.send_inbox_email_draft(draft)
 
     run_cli_command(ctx, json_out, factory)
 
