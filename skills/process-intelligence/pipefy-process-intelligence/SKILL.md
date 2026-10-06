@@ -70,7 +70,9 @@ The user asks to analyze or improve an existing process:
 
 ## Diagnosis framework
 
-Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `get_pipe` and `get_cards` do not return. Measure them with a timed card read: one `execute_graphql` query on the pipe's cards selecting `updated_at`, `current_phase_age`, and `phases_history` (`firstTimeIn`, `lastTimeOut`, `duration` in seconds per phase); the document is in the reference. It is a read with no confirmation, 25 cards per page (up to 50), so say how many cards the numbers come from. Use a pipe report export (`pipefy-reports`) only for whole-pipe throughput, such as cards leaving a phase per week (`end_at_phase_<n>`, where `<n>` is a report index, not the phase id); the export needs an existing report (`get_pipe_reports`), and creating one with `create_pipe_report` is a write, so ask first. Without either, ask the user; do not infer time from `cards_count`.
+Time-based signals need dates that `get_pipe` and `get_cards` do not return. Per-card signals (stuck in a phase for more than 7 days, no update in weeks) come from a timed card read: one `execute_graphql` query on the pipe's cards selecting `updated_at`, `current_phase_age`, and `phases_history` (`firstTimeIn`, `lastTimeOut`, `duration` in seconds per phase); the document is in the reference. It is a read with no confirmation, 25 cards per page (up to 50), so say how many cards the numbers come from.
+
+Whole-pipe signals (a phase with no card in 90 days, cards leaving a phase per week) need every card, because the `cards` query has no date filter and no documented order, so one page proves nothing about the cards it left out. Page the timed read until `hasNextPage` is false, or use a pipe report export (`pipefy-reports`) with `start_at_phase_<n>` and `end_at_phase_<n>` (`<n>` is a report index, not the phase id); the export needs an existing report (`get_pipe_reports`), and creating one with `create_pipe_report` is a write, so ask first. Without full coverage, say the signal was not checked; do not call a phase dead from a sample, and do not infer time from `cards_count`.
 
 | Signal | Opportunity |
 |--------|-------------|
@@ -80,7 +82,7 @@ Time-based signals (stuck for >7 days, 0 cards over 90 days) need dates that `ge
 | Same comment posted repeatedly | AI agent to auto-post based on trigger |
 | No automation between intake and first action | Add "notify assignee" automation on card creation |
 | Large field count on start form | Move optional fields to later phases |
-| Phases with 0 cards over 90 days | Merge into a neighboring phase, or replace the hop with an automation or AI agent. Do not treat an empty phase as a reason to delete the pipe. |
+| Phases with 0 cards over 90 days (whole pipe, not a sample) | Merge into a neighboring phase, or replace the hop with an automation or AI agent. Do not treat an empty phase as a reason to delete the pipe. |
 
 ---
 
