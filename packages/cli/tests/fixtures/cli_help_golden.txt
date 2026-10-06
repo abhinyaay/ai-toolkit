@@ -2607,7 +2607,8 @@ Usage: pipefy phase create [OPTIONS]
 │                                  no other phase has. A new pipe's Inbox,     │
 │                                  Doing and Done keys are 1, 2 and 3, and 0   │
 │                                  omits the phase from get_pipe phases.       │
-│                                  get_pipe does not return this key.          │
+│                                  get_pipe returns each key as                │
+│                                  phases[].index, in ascending order.         │
 │    --description  -d      TEXT                                               │
 │    --json         -j                                                         │
 │    --help                        Show this message and exit.                 │
