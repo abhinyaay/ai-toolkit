@@ -228,7 +228,6 @@ class WebhookService:
         return await self.send_inbox_email_draft(draft)
 
     async def send_inbox_email_draft(self, draft: InboxEmailDraft) -> dict[str, Any]:
-        """Send a draft as-is (createAndSendInboxEmail)."""
         return await self.send_inbox_email(
             draft.card_id,
             list(draft.to),

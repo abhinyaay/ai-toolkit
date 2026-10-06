@@ -35,11 +35,6 @@ def _email_irreversible_sentence(draft: InboxEmailDraft) -> str:
     )
 
 
-def _email_digest(draft: InboxEmailDraft) -> str:
-    """Bind the token to the exact message, so a changed email needs a new preview."""
-    return digest_identity_value(draft.model_dump(mode="json"))
-
-
 class WebhookTools:
     """MCP tools for sending emails from card inboxes and managing webhooks."""
 
@@ -228,7 +223,7 @@ class WebhookTools:
                 irreversible_sentence=_email_irreversible_sentence(draft),
                 resource_identity={
                     "card_id": draft.card_id,
-                    "email": _email_digest(draft),
+                    "email": digest_identity_value(draft.model_dump(mode="json")),
                 },
                 tool_name="send_inbox_email",
                 confirmation_token=confirmation_token,
@@ -345,7 +340,7 @@ class WebhookTools:
                 resource_identity={
                     "card_id": cid,
                     "email_template_id": template_id,
-                    "email": _email_digest(draft),
+                    "email": digest_identity_value(draft.model_dump(mode="json")),
                 },
                 tool_name="send_email_with_template",
                 confirmation_token=confirmation_token,
