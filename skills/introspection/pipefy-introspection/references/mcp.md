@@ -27,7 +27,7 @@ Mutations use two steps. The first call returns a preview with `confirmation_tok
    execute_graphql query="mutation CreateLabel($input: CreateLabelInput!) { createLabel(input: $input) { label { id name } } }" variables='{"input": {"pipe_id": 67890, "name": "Urgent", "color": "#FF0000"}}' confirm=true confirmation_token="<token from preview>"
    ```
 
-`create_phase_field` does not accept options. Create first, then update. MCP mutations are two-step: preview, then `confirm=true` plus `confirmation_token`. Resend the call unchanged with `confirm=true` and the token; if the document changed, the response is a fresh preview whose token is bound to the new document.
+To set options at creation, pass `options` to `create_phase_field`; use this mutation to change them later. MCP mutations are two-step: preview, then `confirm=true` plus `confirmation_token`. Resend the call unchanged with `confirm=true` and the token; if the document changed, the response is a fresh preview whose token is bound to the new document.
 
 Then after the preview:
 

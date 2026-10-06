@@ -18,7 +18,7 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, att
 
 ## Cross-cutting patterns
 
-- **Field types** are not validated locally — use `introspect_type` (e.g., on `CreatePhaseFieldInput`) for allowed values.
+- **Field types** for `create_phase_field` are the API's `FieldTypeId` enum values (lower case, e.g. `short_text`, not `SHORT_TEXT`). The tool's input schema lists them.
 
 - `extra_input` merges extra API keys (camelCase); keys that duplicate primary arguments are ignored.
 - **Phase connections are UI-only.** Creating or reordering phases does not wire Phase Connections / `allowed_phases`. Configure edges in the Pipefy UI; use `get_phase_allowed_move_targets` before moves. The API cannot add transition edges.
@@ -131,11 +131,7 @@ Before `move_card_to_phase`, call `get_phase_allowed_move_targets`. Required emp
 | `update_phase_field` | No | Rename, reorder, change required flag. |
 | `delete_phase_field` | No | **Destructive; review and approve first.** |
 
-**Discover field types:**
-
-`introspect_type type_name="CreatePhaseFieldInput"`
-
-Read the `type` field description for valid values. The field is an `ID` scalar, not an enum.
+**Field types:** `field_type` takes a `FieldTypeId` value, which the `create_phase_field` input schema lists (or `introspect_type type_name="FieldTypeId"`). Pass `options` for select, radio, and checklist types. A `connector` field also needs `extra_input.connectedRepoId`: a pipe id, or a table id.
 
 ---
 
@@ -219,7 +215,7 @@ Do not hide a required field; clear `required` first.
 - **`create_card` fails with missing required fields:** call `get_start_form_fields` first to discover required `field_id` values.
 - **`create_card` / write reports failure (empty or unclear message):** do not blind-retry. Re-read `get_cards` / `get_phase_cards_count` (or pipe `cards_count`) before any retry — see `pipefy-api-fallback` (ambiguous write failure re read before retry).
 - **Connections missing after a connector field update:** `update_card_field` is replace-all — writing one related card id drops the rest (same replace-all applies to other list-valued fields: attachments, checklists). Prefer `update_card` with `operation` ADD/REMOVE and related **card ids**. Do not rebuild a full list from `get_card` `value` (display titles only); for REMOVE or a safe full rewrite, get current related-card ids from `get_card_relations` (or GraphQL `array_value`). For *writes* via a pipe relation (not a connector field), use `create_card_relation` / `delete_card_relation` — see `pipefy-relations`. Pipe labels and assignees are not fields: use `update_card(label_ids=)` / `assignee_ids` (replace-all); `field_updates` ADD cannot address them.
-- **`create_phase_field` rejects type:** call `introspect_type type_name="CreatePhaseFieldInput"` to get valid values.
+- **`create_phase_field` rejects type** (`Field type not found with id: ...`): use a `FieldTypeId` value, in lower case (`short_text`, not `SHORT_TEXT`). `introspect_type type_name="FieldTypeId"` lists them.
 
 ## See also
 

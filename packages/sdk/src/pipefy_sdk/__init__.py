@@ -22,6 +22,7 @@ from pipefy_sdk.graphql_problem import (
 from pipefy_sdk.member_removal import MemberRemovalResult
 from pipefy_sdk.models import (
     CONDITION_OPERATIONS,
+    FIELD_TYPE_IDS,
     Attachment,
     AttachmentTarget,
     AttachmentUploadError,
@@ -40,6 +41,7 @@ from pipefy_sdk.models import (
     CreateSendTaskAutomationInput,
     DataLookupCondition,
     DeleteCommentInput,
+    FieldTypeId,
     InboxEmailDraft,
     MemberInvite,
     NonBlankStr,
@@ -137,6 +139,8 @@ __all__ = [
     "CreateSendTaskAutomationInput",
     "DataLookupCondition",
     "DeleteCommentInput",
+    "FIELD_TYPE_IDS",
+    "FieldTypeId",
     "InboxEmailDraft",
     "GraphQLProblem",
     "GraphQLProblemKind",

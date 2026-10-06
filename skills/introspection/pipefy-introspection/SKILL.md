@@ -66,7 +66,7 @@ search_schema keyword="automation" kind="INPUT_OBJECT"
 ## When to use introspection
 
 - A dedicated tool returned an error and you need to understand why — introspect the input type to check argument names/types.
-- Before creating fields: `introspect_type('CreatePhaseFieldInput')` to read the `type` field description. Its type is the `ID` scalar; valid values are listed in the description, not an enum.
+- Field types for `create_phase_field`: the tool's input schema lists them. When the schema is not visible, or to check for drift, `introspect_type('FieldTypeId')` lists them.
 - Before using `extra_input`: introspect the corresponding input type to find optional keys.
 - Unknown mutation signature: `introspect_mutation('createSomething')` before `execute_graphql`.
 - Schema exploration: `search_schema('automation')` to find related types and inputs.
@@ -113,10 +113,10 @@ Ready-to-use patterns for situations where dedicated tools are insufficient.
 ### Recipe 1 — Discover valid field types for `create_phase_field`
 
 ```
-introspect_type('CreatePhaseFieldInput')
+introspect_type('FieldTypeId')
 ```
 
-Read the `type` field description for valid values. The field is an `ID` scalar, so there is no enum to introspect.
+`CreatePhaseFieldInput.type` is an `ID` scalar, but the API publishes its valid values as the `FieldTypeId` enum. The `create_phase_field` input schema lists the same values.
 
 ### Recipe 2 — Find a card by title (not possible with `find_cards`)
 
@@ -151,7 +151,7 @@ execute_graphql query='query($id: ID!) { pipe(id: $id) { organization { id uuid 
 
 ### Recipe 5 — Update a select field's options after creation
 
-`create_phase_field` does not accept options. Create first, then update.
+To set options at creation, pass `options` to `create_phase_field`. Use this recipe to change them later.
 
 ```
 execute_graphql query='mutation($id: ID!, $options: [String!]) { updatePhaseField(input: { id: $id, options: $options }) { phase_field { id label options } } }' variables='{"id":"<field-id>","options":["High","Medium","Low"]}'

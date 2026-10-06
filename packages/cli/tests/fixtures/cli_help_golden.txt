@@ -1773,7 +1773,15 @@ Usage: pipefy field create [OPTIONS]
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ *  --phase          TEXT  Phase id. [required]                               │
 │ *  --label  -l      TEXT  Field label in the UI. [required]                  │
-│ *  --type   -t      TEXT  Pipefy field type (e.g. short_text, number).       │
+│ *  --type   -t      TEXT  Field type, a FieldTypeId value: assignee_select,  │
+│                           attachment, checklist_horizontal,                  │
+│                           checklist_vertical, cnpj, connector, cpf,          │
+│                           currency, date, datetime, due_date,                │
+│                           dynamic_content, email, id, label_select,          │
+│                           long_text, number, phone, radio_horizontal,        │
+│                           radio_vertical, select, short_text, statement,     │
+│                           time. A connector also needs connectedRepoId in    │
+│                           --extra.                                           │
 │                           [required]                                         │
 │    --extra          TEXT  JSON object of extra CreatePhaseFieldInput fields. │
 │    --json   -j                                                               │
