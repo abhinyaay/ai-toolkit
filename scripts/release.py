@@ -637,7 +637,7 @@ def _venv_python(venv: Path) -> str:
 
 
 def smoke_build_and_install() -> None:
-    """Build the release wheels and launch every entry point from a fresh install.
+    """Build the release wheels, launch every entry point, and make an authenticated call.
 
     The one check the release commit's diff can never show. A release can break
     with nothing in this repository changing: an upstream publication inside the
@@ -751,7 +751,8 @@ def _tag_and_publish(branch: str, version: str, *, assume_yes: bool) -> None:
 
     confirm(
         f"About to tag {tag}, push to origin, and publish to PyPI (the built "
-        "wheels install and launch). This cannot be undone.",
+        "wheels install, launch, and make an authenticated call). This cannot be "
+        "undone.",
         assume_yes=assume_yes,
     )
 
