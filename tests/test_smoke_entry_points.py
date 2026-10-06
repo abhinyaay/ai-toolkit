@@ -310,6 +310,17 @@ class TestAuthenticatedCall:
         with pytest.raises(_smoke.SmokeError, match="bind refused"):
             _smoke.authenticated_call()
 
+    def test_a_wrong_payload_is_a_failure(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def answer_null_me(handler) -> None:
+            handler.rfile.read(int(handler.headers.get("Content-Length", 0)))
+            handler._reply(200, b'{"data": {"me": null}}', "application/json")
+
+        monkeypatch.setattr(_smoke._StubGraphQLHandler, "do_POST", answer_null_me)
+        with pytest.raises(_smoke.SmokeError, match="get_me returned None"):
+            _smoke.authenticated_call()
+
     def test_a_rejected_bearer_is_a_failure(self) -> None:
         with pytest.raises(_smoke.SmokeError, match="401"):
             _smoke.authenticated_call(token="wrong-token")
