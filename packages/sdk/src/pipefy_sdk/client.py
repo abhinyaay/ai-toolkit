@@ -2245,6 +2245,7 @@ class PipefyClient:
         type: str,
         metadata: dict[str, Any],
         data_sources: list[dict[str, Any]] | None = None,
+        portal_uuid: str | None = None,
         editable: bool | None = None,
     ) -> dict[str, Any]:
         """Update a portal page element (full metadata replace).
@@ -2258,7 +2259,10 @@ class PipefyClient:
             page_id: Parent page UUID.
             type: Element type for metadata validation.
             metadata: Complete metadata blob.
-            data_sources: Optional data source bindings.
+            data_sources: Data source bindings that replace the element's list;
+                ``[]`` unlinks them all. Omit to keep the current ones.
+            portal_uuid: Portal holding the element; required when
+                ``data_sources`` is omitted.
             editable: Optional editable flag.
         """
         return await self._portal_service.update_portal_element(
@@ -2267,6 +2271,7 @@ class PipefyClient:
             type=type,
             metadata=metadata,
             data_sources=data_sources,
+            portal_uuid=portal_uuid,
             editable=editable,
         )
 

@@ -576,6 +576,7 @@ class PortalService:
         type: PortalElementType,
         metadata: dict[str, Any],
         data_sources: list[dict[str, Any]] | None = None,
+        portal_uuid: str | None = None,
         editable: bool | None = None,
     ) -> dict[str, Any]:
         """Update a portal page element (full ``metadata`` replace).
@@ -589,8 +590,16 @@ class PortalService:
             page_id: Parent page UUID.
             type: Element type for client-side metadata validation only.
             metadata: Complete metadata blob (Pipefy replaces the whole object).
-            data_sources: Optional data source bindings.
+            data_sources: Data source bindings that replace the element's list;
+                ``[]`` unlinks them all. Omit to keep the current ones.
+            portal_uuid: Portal holding the element. Required when ``data_sources``
+                is omitted: the current data sources are read from ``get_portal``
+                and sent back.
             editable: Optional editable flag.
+
+        Raises:
+            ValueError: ``data_sources`` and ``portal_uuid`` are both omitted, or
+                the portal has no element ``element_id`` on page ``page_id``.
         """
         validated = UpdatePortalElementInput.model_validate(
             {
@@ -598,10 +607,15 @@ class PortalService:
                 "page_id": page_id,
                 "type": type,
                 "metadata": metadata,
-                "data_sources": data_sources if data_sources is not None else [],
+                "data_sources": data_sources,
+                "portal_uuid": portal_uuid,
                 "editable": editable,
             }
         )
+        if validated.data_sources is None:
+            validated = validated.model_copy(
+                update={"data_sources": await self._current_data_sources(validated)}
+            )
         data = await _execute_query_with_portal_errors(
             self.execute_interfaces_query,
             UPDATE_ELEMENT_MUTATION,
@@ -621,6 +635,27 @@ class PortalService:
                 "metadata": validated.metadata,
             }
         )
+
+    async def _current_data_sources(
+        self, validated: UpdatePortalElementInput
+    ) -> list[dict[str, Any]]:
+        """Read the element's stored data sources from its portal.
+
+        Called only when ``data_sources`` was omitted, where the input model
+        guarantees ``portal_uuid``.
+        """
+        portal = await self.get_portal(validated.portal_uuid)
+        for page in portal["pages"]:
+            if page["id"] != validated.page_id:
+                continue
+            for element in page["elements"]:
+                if element["id"] == validated.element_id:
+                    return element.get("dataSources") or []
+        msg = (
+            f"Element '{validated.element_id}' was not found on page "
+            f"'{validated.page_id}' of portal '{validated.portal_uuid}'."
+        )
+        raise ValueError(msg)
 
     async def delete_portal_element(
         self,

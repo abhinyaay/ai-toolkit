@@ -927,6 +927,29 @@ async def test_sub_portal_mutation_routes_through_internal_api_client(mock_setti
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_update_portal_element_forwards_portal_uuid(mock_settings):
+    """portal_uuid reaches PortalService, which needs it to keep data sources."""
+    client = PipefyClient(settings=mock_settings, auth=StaticBearerAuth("t"))
+    client._portal_service = MagicMock()
+    client._portal_service.update_portal_element = AsyncMock(return_value={"id": "e"})
+
+    await client.update_portal_element(
+        "e", "p", type="forms", metadata={"name": "F"}, portal_uuid="portal-1"
+    )
+
+    client._portal_service.update_portal_element.assert_awaited_once_with(
+        "e",
+        "p",
+        type="forms",
+        metadata={"name": "F"},
+        data_sources=None,
+        portal_uuid="portal-1",
+        editable=None,
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_pipefy_client_upload_attachment_delegates_to_attachment_service():
     """``client.upload_attachment`` forwards to ``AttachmentService.upload_attachment``."""
     from pathlib import Path
