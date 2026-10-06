@@ -1553,7 +1553,38 @@ async def test_update_portal_element_rejects_blank_portal_uuid(
     mock_portal_client.update_portal_element.assert_not_called()
     payload = extract_payload(result)
     assert payload["success"] is False
+    assert payload["error"]["code"] == "INVALID_ARGUMENTS"
     assert "portal_uuid" in tool_error_message(payload)
+
+
+@pytest.mark.anyio
+async def test_update_portal_element_reports_element_not_on_page(
+    portal_session, mock_portal_client, extract_payload
+):
+    """The SDK's keep-path lookup error reaches the agent as is."""
+    message = (
+        f"Element '{_ELEMENT_UUID}' is on no page of portal '{_PORTAL_UUID}'. "
+        "Check portal_uuid and element_id, or pass data_sources to skip the read."
+    )
+    mock_portal_client.update_portal_element = AsyncMock(
+        side_effect=ValueError(message)
+    )
+
+    async with portal_session as session:
+        result = await session.call_tool(
+            "update_portal_element",
+            {
+                "element_id": _ELEMENT_UUID,
+                "page_id": _PAGE_UUID,
+                "type": "forms",
+                "metadata": _FORMS_METADATA,
+                "portal_uuid": _PORTAL_UUID,
+            },
+        )
+
+    payload = extract_payload(result)
+    assert payload["success"] is False
+    assert tool_error_message(payload) == message
 
 
 @pytest.mark.anyio

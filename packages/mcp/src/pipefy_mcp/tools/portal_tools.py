@@ -652,8 +652,9 @@ class PortalTools:
 
             ``data_sources`` is a complete replacement too: ``[]`` unlinks the element
             from its pipe or table. To keep the current data sources, omit
-            ``data_sources`` and pass ``portal_uuid``; the tool reads them from the
-            portal and sends them back. Omitting both is rejected.
+            ``data_sources`` and pass ``portal_uuid``; the tool reads the element's
+            ``dataSources`` and ``editable`` flag from the portal and sends them back.
+            Every update passes one of the two, or it is rejected.
 
             The success payload ``metadata`` is the input echo (Interfaces
             ``updateElement`` returns only ``success``). Call ``get_portal`` for
@@ -664,10 +665,15 @@ class PortalTools:
                 page_id: Parent page UUID.
                 type: Element type for metadata validation.
                 metadata: Complete metadata JSON for the element.
-                data_sources: Data source bindings that replace the element's list.
-                portal_uuid: Portal holding the element; required when
-                    ``data_sources`` is omitted.
-                editable: Optional editable flag.
+                data_sources: Data source bindings that replace the element's list,
+                    each ``{"repoId": ..., "fieldKeys": [...]}`` as ``get_portal``
+                    returns them. An element with no bindings can pass ``[]``,
+                    which skips the portal read.
+                portal_uuid: The portal you passed to ``get_portal`` whose
+                    ``pages[]`` holds ``page_id``; required when ``data_sources``
+                    is omitted.
+                editable: Editable flag. The API requires it when a data source
+                    lists ``fieldKeys``; the keep path resends the stored one.
             """
             client = get_pipefy_client(ctx)
             element_id, err = validate_tool_id(element_id, "element_id")
@@ -676,10 +682,6 @@ class PortalTools:
             page_id, err = validate_tool_id(page_id, "page_id")
             if err is not None:
                 return err
-            if portal_uuid is not None:
-                portal_uuid, err = validate_tool_id(portal_uuid, "portal_uuid")
-                if err is not None:
-                    return err
             await ctx.debug(
                 f"update_portal_element: element_id={element_id}, page_id={page_id}, "
                 f"type={type}"
