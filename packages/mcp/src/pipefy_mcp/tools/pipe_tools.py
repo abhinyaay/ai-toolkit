@@ -811,7 +811,8 @@ class PipeTools:
 
             Returns:
                 dict: GraphQL response containing a ``pipe`` object with ``id``, ``name``,
-                ``phases`` (workflow phases; each includes ``cards_count``),
+                ``phases`` (workflow phases in ascending ``index`` order; each
+                includes ``index`` and ``cards_count``),
                 ``labels``, ``start_form_fields``, and related metadata from the API.
             """
             client = get_pipefy_client(ctx)

@@ -142,7 +142,7 @@ MCP destructive tools use a two-step `confirmation_token` (see [Destructive oper
 | `get_phase_cards` | `pipefy phase cards` | shipped | ``Phase.cards`` pagination (``--first`` default 50, ``--after``, ``--include-fields``). Prefer over ``get_cards`` for phase-local inventory. |
 | `get_phase_cards_count` | `pipefy phase count` | shipped | Native ``Phase.cards_count`` via ``get_phase``; pair with ``get_phase_cards`` to list. |
 | `get_phase_fields` | `pipefy field list --phase` | shipped | ``pipefy phase get`` returns the same shape. |
-| `get_pipe` | `pipefy pipe get` | shipped | `phases[].cards_count` on workflow phases; `start_form_fields` for start-form intake (start form not in `phases[]`). |
+| `get_pipe` | `pipefy pipe get` | shipped | `phases[].index` and `phases[].cards_count` on workflow phases; `start_form_fields` for start-form intake (start form not in `phases[]`). |
 | `get_pipe_members` | `pipefy member list` | shipped | — |
 | `get_pipe_relations` | `pipefy relation pipe list` | shipped | — |
 | `get_pipe_report` | `pipefy report-pipe get` | shipped | Reports domain. |
