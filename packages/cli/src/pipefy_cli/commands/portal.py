@@ -624,8 +624,9 @@ def portal_element_update(
         "--data-sources",
         help=(
             'JSON array of {"repoId": ..., "fieldKeys": [...]} bindings; replaces '
-            "the element's list, so '[]' unlinks them all. Omit with --portal-uuid "
-            "to keep the current ones."
+            "the element's list, so '[]' unlinks them all. The API also needs "
+            "editable when an entry lists fieldKeys, which this command does not "
+            "send. Omit with --portal-uuid to keep the current ones."
         ),
     ),
     portal_uuid: str | None = typer.Option(
