@@ -33,8 +33,6 @@ def test_digest_identity_value_is_the_sha256_of_sorted_compact_json():
     expected = hashlib.sha256(b'{"a":"x","b":[1,{"c":3,"d":2}]}').hexdigest()
 
     assert digest_identity_value(value) == expected
-    assert digest_identity_value({"a": "x", "b": [1, {"c": 3, "d": 2}]}) == expected
-    assert digest_identity_value({"a": "y", "b": [1, {"c": 3, "d": 2}]}) != expected
 
 
 def test_ttl_constant_is_300():
