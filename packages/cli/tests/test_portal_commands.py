@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -948,9 +949,17 @@ def test_portal_element_update_keeps_data_sources_with_portal_uuid(
     )
 
 
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+
+
 def _panel_text(stderr: str) -> str:
-    """Flatten a Typer error panel into one line of words."""
-    return " ".join(stderr.replace("│", " ").split())
+    """Flatten a Typer error panel into one line of words, without ANSI styling.
+
+    Rich styles option names when color is forced (CI sets ``FORCE_COLOR``), which
+    splits ``--portal-uuid`` into escape-wrapped pieces.
+    """
+    plain = _ANSI_ESCAPE.sub("", stderr)
+    return " ".join(plain.replace("│", " ").split())
 
 
 def _invoke_element_update(runner, mock_client, *options: str):
