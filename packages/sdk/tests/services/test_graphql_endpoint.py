@@ -94,6 +94,19 @@ async def test_execute_binds_the_passed_auth_on_the_transport():
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_gql_transport_accepts_pipefy_auth_credentials():
+    """The client gql builds must accept the ``httpx.Auth`` subclasses in ``pipefy_auth``.
+
+    gql 4.4 builds an ``httpx2`` client whenever ``httpx2`` is installed (``mcp``
+    depends on it), and that client rejects every ``httpx.Auth`` subclass.
+    """
+    transport = HTTPXAsyncTransport(url=GRAPHQL_URL, auth=_bearer())
+    await transport.connect()
+    await transport.close()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_execute_passes_variables_to_session():
     """Test execute creates a session and passes variable_values unchanged."""
     query = _sample_query()
