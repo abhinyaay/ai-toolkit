@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from typing import Any
 
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.types import ToolAnnotations
 from pipefy_sdk import InboxEmailDraft, PipefyId
 
+from pipefy_mcp.tools.destructive_confirmation_token import digest_identity_value
 from pipefy_mcp.tools.destructive_tool_guard import check_destructive_confirmation
 from pipefy_mcp.tools.remote_profile import REMOTE
 from pipefy_mcp.tools.tool_context import get_pipefy_client
@@ -34,14 +33,6 @@ def _email_irreversible_sentence(draft: InboxEmailDraft) -> str:
         "cannot be recalled. The resolved message (recipients, cc/bcc, sender, "
         "subject, body) is under 'email'."
     )
-
-
-def _email_digest(draft: InboxEmailDraft) -> str:
-    """Bind the token to the exact message, so a changed email needs a new preview."""
-    canonical = json.dumps(
-        draft.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 class WebhookTools:
@@ -232,7 +223,7 @@ class WebhookTools:
                 irreversible_sentence=_email_irreversible_sentence(draft),
                 resource_identity={
                     "card_id": draft.card_id,
-                    "email": _email_digest(draft),
+                    "email": digest_identity_value(draft.model_dump(mode="json")),
                 },
                 tool_name="send_inbox_email",
                 confirmation_token=confirmation_token,
@@ -240,14 +231,7 @@ class WebhookTools:
             if guard is not None:
                 return {**guard, "email": draft.model_dump(mode="json")}
             try:
-                raw = await client.send_inbox_email(
-                    draft.card_id,
-                    list(draft.to),
-                    draft.subject,
-                    draft.body,
-                    from_=draft.from_,
-                    **draft.extra,
-                )
+                raw = await client.send_inbox_email_draft(draft)
             except Exception as exc:  # noqa: BLE001
                 return handle_webhook_tool_graphql_error(
                     exc,
@@ -356,7 +340,7 @@ class WebhookTools:
                 resource_identity={
                     "card_id": cid,
                     "email_template_id": template_id,
-                    "email": _email_digest(draft),
+                    "email": digest_identity_value(draft.model_dump(mode="json")),
                 },
                 tool_name="send_email_with_template",
                 confirmation_token=confirmation_token,
@@ -368,14 +352,7 @@ class WebhookTools:
                     "email": draft.model_dump(mode="json"),
                 }
             try:
-                raw = await client.send_inbox_email(
-                    draft.card_id,
-                    list(draft.to),
-                    draft.subject,
-                    draft.body,
-                    from_=draft.from_,
-                    **draft.extra,
-                )
+                raw = await client.send_inbox_email_draft(draft)
             except Exception as exc:  # noqa: BLE001
                 return handle_webhook_tool_graphql_error(
                     exc,

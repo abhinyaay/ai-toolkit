@@ -877,7 +877,7 @@ class PipefyClient:
         """Resolve a template for a card into the email a send would deliver.
 
         Reads only: nothing is sent. Show the draft for approval, then send it
-        with ``send_inbox_email``.
+        with ``send_inbox_email_draft``.
 
         Args:
             card_id: Numeric ID of the card with inbox.
@@ -893,6 +893,10 @@ class PipefyClient:
             from_=from_,
             **attrs,
         )
+
+    async def send_inbox_email_draft(self, draft: InboxEmailDraft) -> dict[str, Any]:
+        """Send an ``InboxEmailDraft`` as-is, e.g. one from ``draft_email_from_template``."""
+        return await self._webhook_service.send_inbox_email_draft(draft)
 
     async def send_email_with_template(
         self,

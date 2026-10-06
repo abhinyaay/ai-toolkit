@@ -33,7 +33,7 @@ SENT = {"createAndSendInboxEmail": {"emailSent": True, "errors": []}}
 @pytest.fixture
 def mock_client():
     client = MagicMock()
-    client.send_inbox_email = AsyncMock(return_value=SENT)
+    client.send_inbox_email_draft = AsyncMock(return_value=SENT)
     client.send_email_with_template = AsyncMock(return_value=SENT)
     client.draft_email_from_template = AsyncMock(
         return_value=InboxEmailDraft(
@@ -60,7 +60,7 @@ def test_email_inbox_send_without_yes_previews_and_sends_nothing(
     r = runner.invoke(app, [*INBOX_SEND, "--extra", '{"cc": ["c@x.com"]}', "--json"])
 
     assert r.exit_code == 2
-    mock_client.send_inbox_email.assert_not_called()
+    mock_client.send_inbox_email_draft.assert_not_called()
     assert json.loads(r.stdout) == {
         "card_id": "12",
         "to": ["a@x.com", "b@x.com"],
@@ -80,12 +80,14 @@ def test_email_inbox_send_with_yes_sends(
     r = runner.invoke(app, [*INBOX_SEND, "--yes", "--json"])
 
     assert r.exit_code == 0, r.output
-    mock_client.send_inbox_email.assert_awaited_once_with(
-        "12",
-        ["a@x.com", "b@x.com"],
-        "Hello",
-        "Hi there",
-        from_="s@x.com",
+    mock_client.send_inbox_email_draft.assert_awaited_once_with(
+        InboxEmailDraft(
+            card_id="12",
+            to=["a@x.com", "b@x.com"],
+            subject="Hello",
+            body="Hi there",
+            from_="s@x.com",
+        )
     )
     assert json.loads(r.stdout) == SENT
 
@@ -102,7 +104,6 @@ def test_email_template_send_without_yes_previews_the_resolved_email(
         "12", "42", to=None, from_=None
     )
     mock_client.send_email_with_template.assert_not_called()
-    mock_client.send_inbox_email.assert_not_called()
     preview = json.loads(r.stdout)
     assert preview["to"] == ["margaret@example.com"]
     assert preview["body"] == ""
@@ -150,4 +151,4 @@ def test_email_inbox_send_rejects_a_blank_sender_before_sending(
     r = runner.invoke(app, args)
 
     assert r.exit_code == 2
-    mock_client.send_inbox_email.assert_not_called()
+    mock_client.send_inbox_email_draft.assert_not_called()

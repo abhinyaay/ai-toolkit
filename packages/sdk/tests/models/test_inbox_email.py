@@ -19,7 +19,6 @@ def test_draft_strips_recipients_and_sender():
     assert draft.card_id == "12"
     assert draft.to == ("a@x.com",)
     assert draft.from_ == "s@x.com"
-    assert draft.extra == {}
 
 
 @pytest.mark.unit

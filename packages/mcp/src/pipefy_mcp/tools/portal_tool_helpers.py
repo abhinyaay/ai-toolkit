@@ -8,8 +8,6 @@ confirms ``get_portal`` -> ``subPortals[].published`` flips to false. CLI
 
 from __future__ import annotations
 
-import hashlib
-import json
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -20,6 +18,7 @@ from pipefy_sdk.models.portal import DeletePortalElementInput
 from pydantic import ValidationError
 
 from pipefy_mcp.core.tool_error_envelope import tool_error
+from pipefy_mcp.tools.destructive_confirmation_token import digest_identity_value
 from pipefy_mcp.tools.graphql_error_helpers import (
     ensure_non_empty_error_message,
     extract_error_strings,
@@ -288,9 +287,7 @@ def plan_portal_element_delete_confirmation(
     if validated.layout is None:
         return PortalElementDeleteConfirmation(descriptor, identity)
     rows = [row.model_dump() for row in validated.layout]
-    identity["layout"] = hashlib.sha256(
-        json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    identity["layout"] = digest_identity_value(rows)
     noun = "row" if len(rows) == 1 else "rows"
     return PortalElementDeleteConfirmation(
         f"{descriptor}, replacing that page's layout ({len(rows)} {noun} sent)",

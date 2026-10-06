@@ -136,6 +136,36 @@ async def test_send_inbox_email_success(mock_settings):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_send_inbox_email_draft_sends_every_field_of_the_draft(mock_settings):
+    payload = {"createAndSendInboxEmail": {"emailSent": True, "errors": []}}
+    service, executor = _make_service(mock_settings, payload)
+    draft = InboxEmailDraft(
+        card_id="1320616225",
+        to=["a@x.com", "b@x.com"],
+        subject="Hello",
+        body="Body",
+        from_="sender@pipefy.com",
+        extra={"cc": ["c@x.com"], "repoId": "307061640"},
+    )
+
+    result = await service.send_inbox_email_draft(draft)
+
+    query, variables = executor.execute_query.call_args[0]
+    assert query is CREATE_AND_SEND_INBOX_EMAIL_MUTATION
+    assert variables["input"] == {
+        "cardId": "1320616225",
+        "from": "sender@pipefy.com",
+        "subject": "Hello",
+        "to": ["a@x.com", "b@x.com"],
+        "text": "Body",
+        "cc": ["c@x.com"],
+        "repoId": "307061640",
+    }
+    assert result == payload
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_send_email_with_template_success(mock_settings):
     card_service = AsyncMock()
     card_service.get_card = AsyncMock(
