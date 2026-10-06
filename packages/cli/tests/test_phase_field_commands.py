@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pipefy_sdk import FIELD_TYPE_IDS
 from pipefy_sdk.transition_hints import TRANSITION_RULES_HINT
 
+from pipefy_cli.commands.field import _complete_field_type
 from pipefy_cli.main import app
 
 
@@ -124,6 +126,15 @@ def test_field_create_json(runner, clean_pipefy_env, saved_cwd, oauth_env):
     mock_client.create_phase_field.assert_awaited_once_with(
         "2", "Owner", "assignee_select"
     )
+
+
+def test_field_create_type_completion_offers_field_type_ids():
+    assert _complete_field_type("short") == ["short_text"]
+    assert _complete_field_type("checklist") == [
+        "checklist_horizontal",
+        "checklist_vertical",
+    ]
+    assert _complete_field_type("") == list(FIELD_TYPE_IDS)
 
 
 def test_field_update_forwards_extra_phase_id_for_slug_resolution(

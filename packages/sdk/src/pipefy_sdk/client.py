@@ -49,6 +49,7 @@ from pipefy_sdk.models.attachment import (
     AttachmentUploadResult,
     PresignedUploadTarget,
 )
+from pipefy_sdk.models.field_definition import FieldTypeId
 from pipefy_sdk.models.inbox_email import InboxEmailDraft
 from pipefy_sdk.models.knowledge_base import DataLookupCondition
 from pipefy_sdk.models.portal import PortalPageLayoutRow
@@ -414,10 +415,10 @@ class PipefyClient:
         self,
         phase_id: str | int,
         label: str,
-        field_type: str,
+        field_type: FieldTypeId | str,
         **attrs: Any,
     ) -> dict:
-        """Create a field on a phase (`field_type` is passed through to the API)."""
+        """Create a field on a phase (`field_type`: a `FieldTypeId` value, passed through)."""
         return await self._pipe_config_service.create_phase_field(
             phase_id,
             label,

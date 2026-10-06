@@ -17,6 +17,7 @@ from _shared.live_settings import (
 )
 
 from pipefy_sdk.graphql_executor import AuthenticatedExecutor, GraphQLEndpoint
+from pipefy_sdk.models.field_definition import FIELD_TYPE_IDS
 from pipefy_sdk.services.schema_introspection_service import (
     SchemaIntrospectionService,
 )
@@ -142,3 +143,13 @@ async def test_live_execute_syntax_error_no_network_payload_shape(live_svc):
     assert "error" in data
     err = data["error"].lower()
     assert "syntax" in err or "invalid" in err or "unexpected" in err
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_live_field_type_id_enum_matches_sdk_field_type_ids(live_svc):
+    """``FIELD_TYPE_IDS`` mirrors the live ``FieldTypeId`` enum; drift fails here."""
+    data = await live_svc.introspect_type("FieldTypeId")
+    assert data.get("kind") == "ENUM"
+    live = {value["name"] for value in data.get("enumValues") or []}
+    assert live == set(FIELD_TYPE_IDS)

@@ -4,7 +4,7 @@ Read, create, update, and delete pipes, phases, phase fields, labels, cards, and
 
 ## Cross-cutting patterns
 
-- **Field types** are not validated locally — use `introspect_type` (e.g. on `CreatePhaseFieldInput`) for allowed values.
+- **Field types** for `create_phase_field` are the API's `FieldTypeId` enum values (lower case, e.g. `short_text`). The tool's input schema lists them, and other strings pass through for the API to validate. A `connector` field also needs `extra_input.connectedRepoId`: a pipe id, or a table id.
 - Successful mutations return a structured `result` (GraphQL payload).
 - Most write tools support optional `debug=true` on errors (GraphQL codes + `correlation_id`).
 - `extra_input` merges extra API keys (camelCase); keys that would duplicate primary arguments are ignored.

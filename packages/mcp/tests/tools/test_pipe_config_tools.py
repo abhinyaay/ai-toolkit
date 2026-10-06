@@ -9,7 +9,7 @@ import pytest
 from _mcp_compat import (
     create_connected_server_and_client_session as create_client_session,
 )
-from pipefy_sdk import PipefyClient, PipefyGraphQLError
+from pipefy_sdk import FIELD_TYPE_IDS, PipefyClient, PipefyGraphQLError
 from pipefy_sdk.transition_hints import TRANSITION_RULES_HINT
 
 from pipefy_mcp.core.tool_error_envelope import tool_error, tool_error_message
@@ -938,6 +938,38 @@ async def test_create_phase_field_success(
 
 
 @pytest.mark.anyio
+async def test_create_phase_field_schema_lists_field_type_ids(pipe_config_session):
+    async with pipe_config_session as session:
+        tools = {t.name: t for t in (await session.list_tools()).tools}
+    field_type = tools["create_phase_field"].input_schema["properties"]["field_type"]
+    assert field_type["anyOf"] == [
+        {"enum": list(FIELD_TYPE_IDS), "type": "string"},
+        {"type": "string"},
+    ]
+
+
+@pytest.mark.anyio
+async def test_create_phase_field_passes_unknown_field_type_to_the_api(
+    pipe_config_session, mock_pipe_config_client, extract_payload
+):
+    """Soft enum: a value outside ``FieldTypeId`` reaches the API, which validates it."""
+    mock_pipe_config_client.create_phase_field.return_value = {
+        "createPhaseField": {"phase_field": {"id": "f1"}},
+    }
+
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "create_phase_field",
+            {"phase_id": 1, "label": "Name", "field_type": "SHORT_TEXT"},
+        )
+
+    mock_pipe_config_client.create_phase_field.assert_awaited_once_with(
+        "1", "Name", "SHORT_TEXT"
+    )
+    assert extract_payload(result)["success"] is True
+
+
+@pytest.mark.anyio
 async def test_create_phase_field_with_options(
     pipe_config_session, mock_pipe_config_client, extract_payload
 ):
@@ -1860,6 +1892,33 @@ async def test_create_phase_field_graphql_error_returns_failure__no_integration(
     payload = extract_payload(result)
     assert payload["success"] is False
     assert "Invalid type" in tool_error_message(payload)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "api_message",
+    [
+        "Field type not found with id: SHORT_TEXT",
+        "Connected repo not found with id: ",
+        "Phase not found with id: 999",
+    ],
+)
+async def test_create_phase_field_not_found_keeps_the_api_message(
+    pipe_config_session, mock_pipe_config_client, extract_payload, api_message
+):
+    """A RESOURCE_NOT_FOUND is not relabeled as a missing phase; the API says which."""
+    mock_pipe_config_client.create_phase_field.side_effect = PipefyGraphQLError(
+        [{"message": api_message, "extensions": {"code": "RESOURCE_NOT_FOUND"}}]
+    )
+    async with pipe_config_session as session:
+        result = await session.call_tool(
+            "create_phase_field",
+            {"phase_id": 999, "label": "L", "field_type": "SHORT_TEXT"},
+        )
+    payload = extract_payload(result)
+    assert payload["success"] is False
+    assert payload["error"]["code"] == "RESOURCE_NOT_FOUND"
+    assert tool_error_message(payload) == api_message.strip()
 
 
 @pytest.mark.anyio

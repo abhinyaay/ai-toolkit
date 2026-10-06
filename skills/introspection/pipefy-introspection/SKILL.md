@@ -66,7 +66,7 @@ search_schema keyword="automation" kind="INPUT_OBJECT"
 ## When to use introspection
 
 - A dedicated tool returned an error and you need to understand why — introspect the input type to check argument names/types.
-- Before creating fields: `introspect_type('CreatePhaseFieldInput')` to read the `type` field description. Its type is the `ID` scalar; valid values are listed in the description, not an enum.
+- Before creating fields: `introspect_type('FieldTypeId')` lists the valid field types for `CreatePhaseFieldInput.type` (an `ID` scalar).
 - Before using `extra_input`: introspect the corresponding input type to find optional keys.
 - Unknown mutation signature: `introspect_mutation('createSomething')` before `execute_graphql`.
 - Schema exploration: `search_schema('automation')` to find related types and inputs.
@@ -113,10 +113,10 @@ Ready-to-use patterns for situations where dedicated tools are insufficient.
 ### Recipe 1 — Discover valid field types for `create_phase_field`
 
 ```
-introspect_type('CreatePhaseFieldInput')
+introspect_type('FieldTypeId')
 ```
 
-Read the `type` field description for valid values. The field is an `ID` scalar, so there is no enum to introspect.
+`CreatePhaseFieldInput.type` is an `ID` scalar, but the API publishes its valid values as the `FieldTypeId` enum. The `create_phase_field` input schema lists the same values.
 
 ### Recipe 2 — Find a card by title (not possible with `find_cards`)
 
