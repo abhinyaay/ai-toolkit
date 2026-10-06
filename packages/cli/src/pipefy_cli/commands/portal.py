@@ -170,6 +170,7 @@ def _portal_element_update_kwargs(
         "type": validated.type,
         "metadata": validated.metadata,
         "data_sources": validated.data_sources,
+        "portal_uuid": validated.portal_uuid,
     }
     if validated.editable is not None:
         kwargs["editable"] = validated.editable
@@ -621,7 +622,15 @@ def portal_element_update(
     data_sources: str | None = typer.Option(
         None,
         "--data-sources",
-        help="Optional JSON array of data source bindings.",
+        help=(
+            "JSON array of data source bindings; replaces the element's list, so "
+            "'[]' unlinks them all. Omit with --portal-uuid to keep the current ones."
+        ),
+    ),
+    portal_uuid: str | None = typer.Option(
+        None,
+        "--portal-uuid",
+        help="Portal holding the element; required when --data-sources is omitted.",
     ),
     json_out: bool = typer.Option(
         False,
@@ -644,7 +653,8 @@ def portal_element_update(
                 "page_id": page_id,
                 "type": type,
                 "metadata": metadata_obj,
-                "data_sources": data_sources_list or [],
+                "data_sources": data_sources_list,
+                "portal_uuid": portal_uuid,
             }
         )
     except ValidationError as exc:

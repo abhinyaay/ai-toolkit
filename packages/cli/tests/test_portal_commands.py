@@ -890,6 +890,8 @@ def test_portal_element_update_json(runner, clean_pipefy_env, saved_cwd, oauth_e
                 "link",
                 "--metadata",
                 json.dumps(link_metadata),
+                "--data-sources",
+                "[]",
                 "--json",
             ],
         )
@@ -901,7 +903,79 @@ def test_portal_element_update_json(runner, clean_pipefy_env, saved_cwd, oauth_e
         type="link",
         metadata=link_metadata,
         data_sources=[],
+        portal_uuid=None,
     )
+
+
+def test_portal_element_update_keeps_data_sources_with_portal_uuid(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    """Without --data-sources, --portal-uuid lets the SDK keep the current ones."""
+    oauth_env("portal-element-update-keep")
+    mock_client = MagicMock()
+    mock_client.update_portal_element = AsyncMock(
+        return_value={**_CREATED_ELEMENT, "metadata": _FORMS_METADATA}
+    )
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "update",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--type",
+                "forms",
+                "--metadata",
+                json.dumps(_FORMS_METADATA),
+                "--portal-uuid",
+                _PORTAL_UUID,
+                "--json",
+            ],
+        )
+    assert result.exit_code == 0, result.stdout + (result.stderr or "")
+    mock_client.update_portal_element.assert_awaited_once_with(
+        _ELEMENT_UUID,
+        _PAGE_UUID,
+        type="forms",
+        metadata=_FORMS_METADATA,
+        data_sources=None,
+        portal_uuid=_PORTAL_UUID,
+    )
+
+
+def test_portal_element_update_without_data_sources_or_portal_uuid_exit_2(
+    runner, clean_pipefy_env, saved_cwd, oauth_env
+):
+    """The old command sent [] here and unlinked the element from its pipe."""
+    oauth_env("portal-element-update-neither")
+    mock_client = MagicMock()
+    with patch(
+        "pipefy_cli.commands._common.get_authenticated_client",
+        return_value=mock_client,
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "portal",
+                "element",
+                "update",
+                _ELEMENT_UUID,
+                _PAGE_UUID,
+                "--type",
+                "forms",
+                "--metadata",
+                json.dumps(_FORMS_METADATA),
+                "--json",
+            ],
+        )
+    assert result.exit_code == 2
+    assert "portal_uuid" in result.stderr
+    mock_client.update_portal_element.assert_not_called()
 
 
 def test_portal_element_update_rejects_invalid_metadata_exit_2(
