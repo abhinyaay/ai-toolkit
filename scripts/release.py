@@ -689,10 +689,13 @@ def smoke_build_and_install() -> None:
             [python, "-m", "pip", "install", *(str(dist / name) for name in wheels)],
         )
         _smoke_run(
-            "launch the console entry points from the fresh install",
+            "launch the console entry points and make an authenticated call from the fresh install",
             [python, str(SMOKE_SCRIPT)],
         )
-    print("The built wheels install and every console entry point launches.")
+    print(
+        "The built wheels install, every console entry point launches, and an "
+        "authenticated call goes through."
+    )
 
 
 def _tag_and_publish(branch: str, version: str, *, assume_yes: bool) -> None:

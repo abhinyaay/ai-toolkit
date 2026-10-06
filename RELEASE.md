@@ -123,7 +123,7 @@ uvx "pipefy-mcp-server==0.2.0b1" --help
 
 ## The scheduled packaging gate
 
-`uv.lock` pins every dependency, so the test suite passes against known-good versions no matter what is published to PyPI. That is what a lock is for, and it means **no test in this repository observes a fresh install**. The packaging smoke install is what covers that band: it installs into a clean virtualenv with `pip` and launches every console entry point, resolving dependencies from the index rather than the lock.
+`uv.lock` pins every dependency, so the test suite passes against known-good versions no matter what is published to PyPI. That is what a lock is for, and it means **no test in this repository observes a fresh install**. The packaging smoke install is what covers that band: it installs into a clean virtualenv with `pip`, launches every console entry point, and makes one authenticated GraphQL call through the installed SDK against a local stub endpoint, resolving dependencies from the index rather than the lock.
 
 That gate runs on every push and pull request (`ci.yml`), on a daily schedule (`packaging-smoke.yml`), and once more inside `release.py publish` before the tag exists — the last of which is what makes the break stoppable, since `release.py verify` installs from PyPI only after the tag is public. The schedule is what covers the window between merges: a dependency breakage published upstream arms itself with zero commits here, and without a timer it stays invisible until someone happens to open a PR — or until a release is attempted, which is how `mcp` 2.0.0 was found: at the last possible moment, with the tag already pushed.
 
@@ -137,7 +137,7 @@ A failure opens a GitHub issue labelled `packaging-smoke-failure`, or comments o
 Two limits worth knowing rather than being surprised by:
 
 - **The timer only fires from the default branch.** GitHub reads `schedule` and `workflow_dispatch` from `main` alone, so those two triggers stay inert until the workflow is promoted. The path-filtered `pull_request` trigger is unaffected, which is what exercises the workflow on the pull request that changes it.
-- **The gate proves process startup, not behaviour.** A dependency release that breaks behaviour without breaking imports passes it, and the suite would not see it either, since the suite runs against the lock. Closing that band means running some portion of the tests unlocked.
+- **The gate proves process startup and one authenticated request, not behaviour.** The request builds `PipefyClient` with `pipefy_auth.StaticBearerAuth` and sends `get_me` over loopback, so an HTTP stack that rejects that bearer fails the gate. The service-account path (`OAuth2ClientCredentials`) and `RefreshableBearerAuth` are not exercised. Any other dependency release that breaks behaviour without breaking imports passes it, and the suite would not see it either, since the suite runs against the lock. Closing that band means running some portion of the tests unlocked.
 
 ## Keeping `dev` and `main` reconciled
 
