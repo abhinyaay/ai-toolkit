@@ -623,14 +623,18 @@ def portal_element_update(
         None,
         "--data-sources",
         help=(
-            "JSON array of data source bindings; replaces the element's list, so "
-            "'[]' unlinks them all. Omit with --portal-uuid to keep the current ones."
+            'JSON array of {"repoId": ..., "fieldKeys": [...]} bindings; replaces '
+            "the element's list, so '[]' unlinks them all. Omit with --portal-uuid "
+            "to keep the current ones."
         ),
     ),
     portal_uuid: str | None = typer.Option(
         None,
         "--portal-uuid",
-        help="Portal holding the element; required when --data-sources is omitted.",
+        help=(
+            "Portal holding the element; required when --data-sources is omitted. "
+            "Its data sources and editable flag are read and sent back."
+        ),
     ),
     json_out: bool = typer.Option(
         False,
@@ -644,6 +648,13 @@ def portal_element_update(
     element_id = _require_non_empty_portal_uuid(element_id)
     page_id = _require_non_empty_portal_uuid(page_id)
     metadata_obj = _parse_required_metadata_json(metadata, "--metadata")
+    _reject_blank_optional_string(data_sources, "--data-sources")
+    _reject_blank_optional_string(portal_uuid, "--portal-uuid")
+    if data_sources is None and portal_uuid is None:
+        raise typer.BadParameter(
+            "Pass --portal-uuid to keep the element's current data sources, or "
+            "--data-sources to replace them ('[]' unlinks them all)."
+        )
     data_sources_list = _parse_optional_data_sources_json(data_sources)
 
     try:
