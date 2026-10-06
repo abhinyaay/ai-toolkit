@@ -243,11 +243,10 @@ def authenticated_call(token: str = SMOKE_BEARER_TOKEN) -> None:
         ) from exc
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
-        # model_construct skips the env, .env and config.toml sources, so the
-        # operator's own settings cannot change the request this sends.
+        # model_construct skips the env, .env and config.toml sources and
+        # validation, so the operator's own settings cannot change the request.
         settings = PipefySettings.model_construct(
-            base_url=f"http://127.0.0.1:{server.server_port}",
-            allow_insecure_urls=True,
+            base_url=f"http://127.0.0.1:{server.server_port}"
         )
         client = PipefyClient(settings, auth=StaticBearerAuth(token))
         with patch.dict(os.environ, {"NO_PROXY": "*", "no_proxy": "*"}):
