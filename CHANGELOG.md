@@ -50,6 +50,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **CLI `pipefy member remove`**: verifies membership after the mutation. `--json` now prints `{"data": <mutation result>, "warning": ...}` instead of the mutation result at the top level. `warning` is `null` when every member is gone.
 
+- **MCP `update_portal_element` / CLI `pipefy portal element update`**: an update must now pass `data_sources` (`--data-sources`) or `portal_uuid` (`--portal-uuid`). Before, leaving out `data_sources` sent `[]` and unlinked the element from its pipe or table; now `portal_uuid` keeps the current bindings and omitting both is rejected before any call (MCP `INVALID_ARGUMENTS`, CLI exit 2). Updates of elements with no bindings, such as `link`, pass `data_sources: []` / `--data-sources '[]'`. (#711)
+
 ### Fixed
 
 - **SDK (`gql` < 4.4)**: a fresh install of `pipefy-mcp-server` resolved `gql` 4.4.0, whose HTTPX transport builds an `httpx2` client whenever `httpx2` is installed, and `mcp` depends on `httpx2`. That client rejects the `httpx.Auth` subclasses in `pipefy_auth`, so every GraphQL call failed with `TypeError: Invalid "auth" argument`, on the stdio and remote profiles alike. `pipefy` now declares `gql[httpx]>=4.0.0,<4.4`. The packaging smoke install (`scripts/smoke_entry_points.py`, run by CI, the daily schedule, and the release flow) now also makes one authenticated `get_me` call through the installed SDK against a local stub endpoint, so this class of break fails the gate instead of a user's first tool call. Closes #741.
