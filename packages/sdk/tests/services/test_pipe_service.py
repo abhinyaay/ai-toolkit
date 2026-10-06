@@ -59,6 +59,14 @@ def test_get_pipe_query_selects_cards_count_on_phases():
 
 
 @pytest.mark.unit
+def test_get_pipe_query_selects_index_on_phases():
+    pipe = GET_PIPE_QUERY.document.definitions[0].selection_set.selections[0]
+    phases = next(s for s in pipe.selection_set.selections if s.name.value == "phases")
+    names = {s.name.value for s in phases.selection_set.selections}
+    assert "index" in names
+
+
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_pipe_returns_phases_with_cards_count():
     pipe_id = 10

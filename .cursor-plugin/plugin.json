@@ -2,7 +2,7 @@
   "name": "pipefy",
   "displayName": "Pipefy",
   "description": "Hosted Pipefy MCP tools for pipes, cards, and automations, plus the Pipefy skill catalog, with browser sign-in and no local Python.",
-  "version": "0.5.2-beta.1",
+  "version": "0.5.3-beta.1",
   "author": { "name": "Pipefy" },
   "homepage": "https://github.com/pipefy/ai-toolkit",
   "repository": "https://github.com/pipefy/ai-toolkit",
@@ -26,6 +26,7 @@
     "./skills/pipes-and-cards/pipefy-pipes-and-cards",
     "./skills/portal-setup/pipefy-portal-setup",
     "./skills/process-design/pipefy-process-design",
+    "./skills/process-impact/pipefy-process-impact",
     "./skills/process-intelligence/pipefy-process-intelligence",
     "./skills/relations/pipefy-relations",
     "./skills/reports/pipefy-reports"
