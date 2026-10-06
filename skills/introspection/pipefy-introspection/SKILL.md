@@ -66,7 +66,7 @@ search_schema keyword="automation" kind="INPUT_OBJECT"
 ## When to use introspection
 
 - A dedicated tool returned an error and you need to understand why — introspect the input type to check argument names/types.
-- Before creating fields: `introspect_type('FieldTypeId')` lists the valid field types for `CreatePhaseFieldInput.type` (an `ID` scalar).
+- Field types for `create_phase_field`: the tool's input schema lists them. When the schema is not visible, or to check for drift, `introspect_type('FieldTypeId')` lists them.
 - Before using `extra_input`: introspect the corresponding input type to find optional keys.
 - Unknown mutation signature: `introspect_mutation('createSomething')` before `execute_graphql`.
 - Schema exploration: `search_schema('automation')` to find related types and inputs.
@@ -151,7 +151,7 @@ execute_graphql query='query($id: ID!) { pipe(id: $id) { organization { id uuid 
 
 ### Recipe 5 — Update a select field's options after creation
 
-`create_phase_field` does not accept options. Create first, then update.
+To set options at creation, pass `options` to `create_phase_field`. Use this recipe to change them later.
 
 ```
 execute_graphql query='mutation($id: ID!, $options: [String!]) { updatePhaseField(input: { id: $id, options: $options }) { phase_field { id label options } } }' variables='{"id":"<field-id>","options":["High","Medium","Low"]}'
