@@ -268,6 +268,7 @@ def test_validate_behaviors_accepts_internal_id_when_in_pipe_field_set() -> None
         pipe_field_ids=pipe_field_ids,
         pipe_phase_ids=set(),
         related_pipe_ids=set(),
+        pipe_event_ids={"card_created"},
     )
 
     assert problems == []
@@ -308,6 +309,7 @@ def test_validate_behaviors_rejects_non_member_field_id() -> None:
         pipe_field_ids={EXAMPLE_FIELD_SLUG},
         pipe_phase_ids=set(),
         related_pipe_ids=set(),
+        pipe_event_ids={"card_created"},
     )
 
     assert warnings == []
@@ -340,6 +342,7 @@ def test_validate_behaviors_rejects_unknown_move_card_destination_phase() -> Non
         pipe_field_ids=set(),
         pipe_phase_ids={"other-phase"},
         related_pipe_ids=set(),
+        pipe_event_ids={"card_created"},
     )
 
     assert warnings == []
@@ -448,12 +451,15 @@ def test_validate_behaviors_accepts_event_id_offered_by_pipe() -> None:
 
 
 @pytest.mark.unit
-def test_validate_behaviors_skips_event_id_check_when_events_unknown() -> None:
-    # None (not loaded) and an empty set (not enumerable) both skip the check,
-    # so a stale event_id is not falsely flagged.
+def test_validate_behaviors_warns_when_event_id_cannot_be_verified() -> None:
+    # None (catalog not loaded) and an empty set (none enumerated) both mean the
+    # eventId could not be checked. A stale event_id is not hard-flagged (no false
+    # positive), but a behavior that carries an eventId yields a warning rather than
+    # passing silently, so the caller never reports a clean pass over an unverified
+    # eventId.
     for events in (None, set()):
-        problems, _ = validate_behaviors_against_pipe(
-            [_behavior_with_event("not_a_real_event")],
+        problems, warnings = validate_behaviors_against_pipe(
+            [_behavior_with_event("maybe_stale_event")],
             pipe_id=EXAMPLE_PIPE_ID,
             pipe_field_ids=set(),
             pipe_phase_ids=set(),
@@ -461,6 +467,9 @@ def test_validate_behaviors_skips_event_id_check_when_events_unknown() -> None:
             pipe_event_ids=events,
         )
         assert problems == []
+        assert len(warnings) == 1
+        assert "maybe_stale_event" in warnings[0]
+        assert "could not be verified" in warnings[0]
 
 
 @pytest.mark.unit
