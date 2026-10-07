@@ -155,6 +155,14 @@ def format_validation_error_message(exc: ValidationError) -> str:
         loc = ".".join(str(part) for part in err.get("loc", ()))
         err_type = err.get("type", "")
         msg = err.get("msg", "")
+        if err_type == "value_error":
+            # Pydantic renders a custom validator's ValueError as "Value error, <text>";
+            # the raw text is in ctx["error"]. Use it so that prefix does not leak, the
+            # same way portal_element_validation_error does.
+            ctx = err.get("ctx") or {}
+            inner = ctx.get("error")
+            if inner is not None:
+                msg = str(inner)
         if err_type == "missing":
             clauses.append(f"missing required argument '{loc}'")
         elif err_type == "extra_forbidden":
