@@ -48,6 +48,11 @@ VALIDATE_FETCH_TIMEOUT_SECONDS = 30
 
 _RECORD_NOT_SAVED_PATTERN = "RECORD_NOT_SAVED"
 
+_ROLLBACK_RECOVERY_NOTE = (
+    "A rejected update is not rolled back. "
+    "Call get_ai_agent to see what is left, fix the payload, and send the full list again."
+)
+
 _PAYLOAD_OK_SUFFIX = (
     "\n\nNote: Pre-flight found no field, phase, relation, or actionType problems. "
     "RECORD_NOT_SAVED does not name the cause. "
@@ -55,8 +60,7 @@ _PAYLOAD_OK_SUFFIX = (
     "a human_validation action without emails and title, "
     "and other payload errors. "
     "Rule those out before you conclude the pipe does not support AI agent behaviors. "
-    "A rejected update is not rolled back. "
-    "Call get_ai_agent to see what is left, fix the payload, and send the full list again."
+    + _ROLLBACK_RECOVERY_NOTE
 )
 
 
@@ -153,6 +157,8 @@ class AiAgentTools:
                     enriched
                     + "\n\nValidation found problems:\n"
                     + "\n".join(f"  - {p}" for p in all_problems)
+                    + "\n\n"
+                    + _ROLLBACK_RECOVERY_NOTE
                 )
             except Exception:  # noqa: BLE001
                 return enriched
