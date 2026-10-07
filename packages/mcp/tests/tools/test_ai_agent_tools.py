@@ -43,6 +43,12 @@ def mock_pipefy_client():
     client.get_pipe_members = AsyncMock(return_value={"pipe": {"members": []}})
     client.get_phase_allowed_move_targets = AsyncMock()
     client.get_phase_fields = AsyncMock(return_value={"fields": []})
+    # Behaviors in these tests fire on "card_created"/"card_moved"; return both so the
+    # eventId check resolves cleanly. Tests that exercise a fetch miss or an unknown
+    # eventId override this with a side_effect or a narrower return value.
+    client.get_automation_events = AsyncMock(
+        return_value=[{"id": "card_created"}, {"id": "card_moved"}]
+    )
     client.validate_ai_agent_behaviors = MethodType(
         PipefyClient.validate_ai_agent_behaviors, client
     )
@@ -639,7 +645,7 @@ class TestUpdateAiAgent:
         mock_pipefy_client,
         extract_payload,
     ):
-        """Empty human_validation metadata is now named by the pre-flight (#729), and still never blames the pipe."""
+        """Empty human_validation metadata is now named by the pre-flight, and still never blames the pipe."""
         mock_pipefy_client.update_ai_agent.side_effect = PipefyGraphQLError(
             [{"message": "RECORD_NOT_SAVED"}]
         )
@@ -674,7 +680,7 @@ class TestUpdateAiAgent:
         message = tool_error_message(extract_payload(result))
         assert "RECORD_NOT_SAVED" in message
         # The pre-flight now names the empty-metadata cause instead of leaving it
-        # unexplained, while still never blaming the pipe (#729).
+        # unexplained, while still never blaming the pipe.
         assert "human_validation" in message
         assert "emails" in message or "title" in message
         assert "does not name the cause" not in message
@@ -1095,6 +1101,46 @@ class TestValidateAiAgentBehaviors:
         assert payload["problems"] == []
         assert len(payload["warnings"]) == 1
         assert "relations" in payload["warnings"][0].lower()
+
+    async def test_event_catalog_unavailable_warns_instead_of_clean_pass(
+        self,
+        client_session,
+        mock_pipefy_client,
+        extract_payload,
+    ):
+        # When the automation-event catalog cannot be loaded, a behavior that carries an
+        # eventId must not read as a clean pass: the tool stays valid (no fail-closed) but
+        # warns that the eventId was not verified, so a model does not send an unchecked
+        # eventId into update_ai_agent (a rejected update is not rolled back).
+        pipe_id = make_pipe_id()
+        field_id = make_field_id()
+        mock_pipefy_client.get_pipe.return_value = _pipe_graph_with_field(
+            field_id=field_id
+        )
+        mock_pipefy_client.get_pipe_relations.return_value = {
+            "pipe": {"childrenRelations": [], "parentsRelations": []}
+        }
+        mock_pipefy_client.get_automation_events.side_effect = PipefyGraphQLError(
+            [{"message": "denied"}]
+        )
+        async with client_session as session:
+            result = await session.call_tool(
+                "validate_ai_agent_behaviors",
+                {
+                    "pipe_id": pipe_id,
+                    "behaviors": [
+                        _behavior_update_card_on_pipe(
+                            pipe_id=pipe_id, field_id=field_id
+                        )
+                    ],
+                },
+            )
+        payload = extract_payload(result)
+        assert payload["success"] is True
+        assert payload["valid"] is True
+        assert payload["problems"] == []
+        assert any("could not be verified" in w for w in payload["warnings"])
+        assert payload["message"] != "All behaviors passed validation."
 
     async def test_invalid_field_id_blocking(
         self,
