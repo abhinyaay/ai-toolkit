@@ -59,6 +59,12 @@ KNOWN_AI_ACTION_TYPES = frozenset(
     }
 )
 
+# Default for ``pipe_event_ids``: the caller did not ask for eventId validation at all.
+# This is distinct from ``None`` or an empty set, which mean the caller tried to load the
+# pipe's automation events and they were unavailable or empty — those warn rather than skip
+# silently, so a fetch miss never reads as a clean pass.
+_EVENT_CATALOG_UNSET: Any = object()
+
 
 def validate_behaviors_against_pipe(
     behaviors: list[dict[str, Any]],
@@ -68,7 +74,7 @@ def validate_behaviors_against_pipe(
     pipe_phase_ids: set[str],
     related_pipe_ids: set[str] | None,
     cross_pipe_field_ids: dict[str, set[str]] | None = None,
-    pipe_event_ids: set[str] | None = None,
+    pipe_event_ids: set[str] | None = _EVENT_CATALOG_UNSET,
     unknown_action_types: Literal["error", "warning", "ignore"] = "error",
 ) -> tuple[list[str], list[str]]:
     """Check behaviors against resolved pipe context and return problems and warnings.
@@ -91,9 +97,13 @@ def validate_behaviors_against_pipe(
             fieldIds targeting those pipes are validated against the map.
             When ``None`` (default), cross-pipe fieldIds are skipped.
         pipe_event_ids: Set of automation event ids the source pipe offers (what
-            ``get_automation_events`` returns). Each behavior's ``eventId`` is
-            checked against it. ``None`` (default) or an empty set skips the check
-            (avoids false positives when events could not be enumerated).
+            ``get_automation_events`` returns). Each behavior's ``eventId`` is checked
+            against it. Omitted (the default) means the caller is not validating
+            eventIds and the check is skipped silently. Passing ``None`` or an empty set
+            means the caller tried to load the catalog and it was unavailable or empty:
+            the check cannot run, so a behavior that carries an ``eventId`` yields a
+            warning (not a problem) rather than passing silently, so the caller never
+            reports a clean pass over an unverified ``eventId``.
         unknown_action_types: How to treat non-empty ``actionType`` values not in
             ``KNOWN_AI_ACTION_TYPES``: ``error`` adds to problems, ``warning``
             adds the same message to warnings, ``ignore`` skips.
@@ -121,12 +131,22 @@ def validate_behaviors_against_pipe(
                 f"not found in pipe phases."
             )
 
-        if pipe_event_ids:
-            event_id = payload.event_id if payload else None
-            if event_id and str(event_id) not in pipe_event_ids:
-                problems.append(
-                    f'{prefix}: eventId "{event_id}" is not an automation event '
-                    f"for this pipe. Valid events: {sorted(pipe_event_ids)}."
+        event_id = payload.event_id if payload else None
+        if event_id and pipe_event_ids is not _EVENT_CATALOG_UNSET:
+            if pipe_event_ids:
+                if str(event_id) not in pipe_event_ids:
+                    problems.append(
+                        f'{prefix}: eventId "{event_id}" is not an automation event '
+                        f"for this pipe. Valid events: {sorted(pipe_event_ids)}."
+                    )
+            else:
+                # The caller tried to load the catalog but it came back unavailable
+                # (None) or empty: the eventId could not be checked. Warn rather than let
+                # the behavior read as a clean pass, so the caller does not report
+                # "All behaviors passed validation" over an unverified eventId.
+                warnings.append(
+                    f'{prefix}: eventId "{event_id}" could not be verified against this '
+                    f"pipe's automation events (events unavailable); confirm it is correct."
                 )
 
         for j, action in enumerate(attrs):
@@ -207,13 +227,10 @@ def validate_behaviors_against_pipe(
 
             if action_type == "mcp_tool":
                 extra = metadata.model_extra or {}
+                # The metadata input declares these in camelCase; the payload keeps
+                # those keys, so check the names the schema actually accepts.
                 missing = [
-                    key
-                    for key, alt in (
-                        ("mcpServerId", "mcp_server_id"),
-                        ("toolName", "tool_name"),
-                    )
-                    if not extra.get(key) and not extra.get(alt)
+                    key for key in ("mcpServerId", "toolName") if not extra.get(key)
                 ]
                 if missing:
                     problems.append(
