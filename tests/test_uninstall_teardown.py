@@ -1142,6 +1142,29 @@ def test_a_symlinked_file_keyring_takes_its_target_with_it(tmp_path):
     assert "QUJD" not in run.stdout + run.stderr
 
 
+def test_a_symlinked_file_keyring_whose_target_cannot_be_deleted_is_kept_and_reported(
+    tmp_path,
+):
+    home = _home(tmp_path)
+    dotfiles = tmp_path / "dotfiles"
+    dotfiles.mkdir()
+    real = dotfiles / "keyring.cfg"
+    real.write_text("[pipefy]\nsomeone = \n\tQUJD\n", encoding="utf-8")
+    link = home / ".config" / "pipefy" / "keyring.cfg"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(real)
+    dotfiles.chmod(0o555)
+    try:
+        run = _run(home, _no_uv_tools(_stub_path(tmp_path)))
+    finally:
+        dotfiles.chmod(0o755)
+
+    assert run.returncode == 2, run.stdout + run.stderr
+    assert real.exists()
+    assert link.is_symlink()
+    assert "Failed" in run.stdout
+
+
 def test_keep_credentials_leaves_the_keyring_fallback_file_alone(tmp_path):
     home = _home(tmp_path)
     fallback = _keyring_fallback(home)
