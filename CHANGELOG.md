@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **`uninstall.sh` teardown, symlinked files**: when a shell rc, the Codex config, or the keyring fallback file is a symlink (a dotfiles repository, for example), teardown edits the file the link points at and keeps the link. It used to replace the link with a regular file and leave the original content, including any credential, untouched. A symlinked file-backend `keyring.cfg` is deleted together with the file it points at. When that file cannot be deleted, teardown keeps the link, reports the failure, and exits 2, so the re-scan still finds the store.
 
+- **Skills `pipefy-introspection` and `pipefy-api-fallback`, endpoints and auth errors**: both skills said introspection and real operations need different hosts. One endpoint, `https://app.pipefy.com/graphql` (the toolkit's default), serves queries, mutations, and introspection, and `api.pipefy.com` answers the same way. The fallback skill also said GraphQL always returns HTTP 200 and that a syntax error returns 400. Syntax errors return 200 with `GRAPHQL_PARSE_FAILED`, authentication failures return HTTP 401 with one of two bodies depending on the cause, and a malformed JSON body returns 500. The error table covers both 401 bodies, `undefinedField`, and the `PERMISSION_DENIED` Pipefy returns for a pipe or card ID that does not exist.
+
 ## [0.5.3-beta.1] - 2026-10-06
 
 ### Added
