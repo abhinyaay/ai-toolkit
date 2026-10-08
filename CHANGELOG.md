@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **`uninstall.sh --scan` and teardown, keyring fallback file**: on a machine with no OS keychain backend, Python `keyring` stores the `pipefy auth login` session in its own plaintext file, `python_keyring/keyring_pass.cfg` under `$XDG_DATA_HOME` (default `~/.local/share`), which the scan did not inspect, so it reported such a machine as clean. The scan now reports a Pipefy session there (or reports the file as not inspected when it is unreadable), and teardown removes only the `[pipefy]` section of that shared file, without keeping a backup copy of it.
 
-- **`uninstall.sh` teardown, symlinked files**: when a shell rc, the Codex config, the file-backend `keyring.cfg`, or the keyring fallback file is a symlink (a dotfiles repository, for example), teardown edits the file the link points at and keeps the link. It used to replace the link with a regular file and leave the original content, including any credential, untouched.
+- **`uninstall.sh` teardown, symlinked files**: when a shell rc, the Codex config, or the keyring fallback file is a symlink (a dotfiles repository, for example), teardown edits the file the link points at and keeps the link. It used to replace the link with a regular file and leave the original content, including any credential, untouched. A symlinked file-backend `keyring.cfg` is deleted together with the file it points at. When that file cannot be deleted, teardown keeps the link, reports the failure, and exits 2, so the re-scan still finds the store.
 
 ## [0.5.3-beta.1] - 2026-10-06
 
