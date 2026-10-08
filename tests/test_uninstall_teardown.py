@@ -1126,6 +1126,22 @@ def test_only_the_pipefy_section_leaves_the_shared_keyring_fallback_file(tmp_pat
     assert "holds no Pipefy session" in rescan
 
 
+def test_a_symlinked_file_keyring_takes_its_target_with_it(tmp_path):
+    home = _home(tmp_path)
+    real = tmp_path / "elsewhere" / "keyring.cfg"
+    real.parent.mkdir()
+    real.write_text("[pipefy]\nsomeone = \n\tQUJD\n", encoding="utf-8")
+    link = home / ".config" / "pipefy" / "keyring.cfg"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(real)
+
+    run = _run(home, _no_uv_tools(_stub_path(tmp_path)))
+
+    assert not link.exists() and not link.is_symlink()
+    assert not real.exists()
+    assert "QUJD" not in run.stdout + run.stderr
+
+
 def test_keep_credentials_leaves_the_keyring_fallback_file_alone(tmp_path):
     home = _home(tmp_path)
     fallback = _keyring_fallback(home)
@@ -1139,6 +1155,39 @@ def test_keep_credentials_leaves_the_keyring_fallback_file_alone(tmp_path):
     assert "kept by --keep-credentials" in run.stdout
 
 
+def test_a_symlinked_keyring_fallback_file_is_edited_through_the_link(tmp_path):
+    home = _home(tmp_path)
+    real = _keyring_fallback(tmp_path / "elsewhere")
+    link = home / ".local" / "share" / "python_keyring" / "keyring_pass.cfg"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(real)
+
+    run = _run(home, _no_uv_tools(_stub_path(tmp_path)))
+
+    assert link.is_symlink()
+    remaining = real.read_text(encoding="utf-8")
+    assert "[pipefy]" not in remaining and "U0VDUkVUVkFMVUU=" not in remaining
+    assert "[other_2eservice]" in remaining and "[third]" in remaining
+    assert "holds no Pipefy session" in run.stdout.split("== Re-scan ==", 1)[1]
+
+
+def test_a_symlinked_shell_rc_is_edited_through_the_link(tmp_path):
+    # Dotfiles repositories symlink ~/.zshrc; replacing the link with a regular
+    # file would detach it and leave the credential line in the repository.
+    home = _home(tmp_path)
+    dotfiles = tmp_path / "dotfiles"
+    dotfiles.mkdir()
+    real = dotfiles / "zshrc"
+    real.write_text('alias ll="ls -l"\nexport PIPEFY_TOKEN="x"\n', encoding="utf-8")
+    (home / ".zshrc").symlink_to(real)
+
+    _run(home, _no_uv_tools(_stub_path(tmp_path)))
+
+    assert (home / ".zshrc").is_symlink()
+    assert real.read_text(encoding="utf-8") == 'alias ll="ls -l"\n'
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads a mode-000 file")
 def test_an_unreadable_keyring_fallback_file_does_not_stop_the_teardown(tmp_path):
     home = _home(tmp_path)
     fallback = _keyring_fallback(home)

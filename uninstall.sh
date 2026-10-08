@@ -2919,6 +2919,16 @@ backup_file() {
 # within the same directory, so a reader sees the old file or the new one.
 atomic_awk_rewrite() {
     _aw_file="$1"
+    # A dotfile is often a symlink into a dotfiles repository. Renaming the
+    # temp file over the link would replace it with a regular file and leave
+    # the content it points at untouched, so the link's target is rewritten.
+    if [ -L "$_aw_file" ]; then
+        _aw_file=$(resolve_link "$_aw_file")
+        if [ -L "$_aw_file" ] || [ ! -f "$_aw_file" ]; then
+            warn "could not resolve the symlink $1 to a file; leaving it untouched"
+            return 1
+        fi
+    fi
     _aw_prog="$2"
     _aw_arg="$3"
     _aw_arg2="${4:-}"
@@ -3182,6 +3192,17 @@ act_rmpath() {
     fi
     case "$2" in
         userfile|userconfig) backup_file "$1" || return 1 ;;
+        credential)
+            # A credential store behind a symlink: deleting the link would
+            # leave the secret at the target, so the target goes first.
+            if [ -L "$1" ]; then
+                _rm_target=$(resolve_link "$1")
+                if [ -L "$_rm_target" ] || [ ! -f "$_rm_target" ]; then
+                    warn "could not resolve the symlink $1 to a file; leaving it untouched"
+                    return 1
+                fi
+                remove_path "$_rm_target"
+            fi ;;
     esac
     remove_path "$1"
 }
