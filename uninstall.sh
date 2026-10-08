@@ -3201,7 +3201,8 @@ act_rmpath() {
                     warn "could not resolve the symlink $1 to a file; leaving it untouched"
                     return 1
                 fi
-                remove_path "$_rm_target"
+                # A failed delete keeps the link, so the re-scan still finds the store.
+                remove_path "$_rm_target" || return 1
             fi ;;
     esac
     remove_path "$1"
