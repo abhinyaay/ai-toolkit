@@ -1088,6 +1088,73 @@ def test_keep_credentials_skips_tier_two_only(tmp_path):
     assert "uv tool uninstall pipefy-cli" in run.stubs
 
 
+def _keyring_fallback(home: Path) -> Path:
+    path = home / ".local" / "share" / "python_keyring" / "keyring_pass.cfg"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "[other_2eservice]\n"
+        "someone = \n\tQUJD\n"
+        "\n[pipefy]\n"
+        "signin_2epipefy_2ecom_7cpipefy_2dcli = \n\tU0VDUkVUVkFMVUU=\n"
+        "\n[third]\n"
+        "user = \n\tWFla\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_only_the_pipefy_section_leaves_the_shared_keyring_fallback_file(tmp_path):
+    home = _home(tmp_path)
+    fallback = _keyring_fallback(home)
+    stub = _no_uv_tools(_stub_path(tmp_path))
+
+    run = _run(home, stub)
+
+    # The session is revoked first, because only logout reaches the provider.
+    assert any(line.startswith("pipefy auth logout") for line in run.stubs)
+    remaining = fallback.read_text(encoding="utf-8")
+    assert "[pipefy]" not in remaining and "U0VDUkVUVkFMVUU=" not in remaining
+    assert "[other_2eservice]\nsomeone = \n\tQUJD\n" in remaining
+    assert "[third]\nuser = \n\tWFla\n" in remaining
+    # A backup would be a second plaintext copy of the token it just removed.
+    assert not list(fallback.parent.glob("keyring_pass.cfg.bak.*"))
+    removed = run.stdout.split("Removed:", 1)[1].split("\n\n", 1)[0]
+    assert f"remove the [pipefy] section from {fallback}" in removed
+    # The re-scan sees the file again and finds nothing of ours in it.
+    rescan = run.stdout.split("== Re-scan ==", 1)[1]
+    assert "keyring fallback file: " not in rescan
+    assert "holds no Pipefy session" in rescan
+
+
+def test_keep_credentials_leaves_the_keyring_fallback_file_alone(tmp_path):
+    home = _home(tmp_path)
+    fallback = _keyring_fallback(home)
+    before = fallback.read_text(encoding="utf-8")
+
+    run = _run(
+        home, _no_uv_tools(_stub_path(tmp_path)), args=("--yes", "--keep-credentials")
+    )
+
+    assert fallback.read_text(encoding="utf-8") == before
+    assert "kept by --keep-credentials" in run.stdout
+
+
+def test_an_unreadable_keyring_fallback_file_does_not_stop_the_teardown(tmp_path):
+    home = _home(tmp_path)
+    fallback = _keyring_fallback(home)
+    fallback.chmod(0o000)
+    cfg = home / ".config" / "pipefy" / "keyring.cfg"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text("[pipefy]\nsomeone = \n\tQUJD\n", encoding="utf-8")
+    try:
+        run = _run(home, _no_uv_tools(_stub_path(tmp_path)))
+    finally:
+        fallback.chmod(0o600)
+
+    assert not cfg.exists()
+    assert "keyring fallback file not inspected" in run.stdout
+
+
 def test_keep_config_keeps_user_authored_configuration(tmp_path):
     home = _home(tmp_path)
     _full_fixture(home)

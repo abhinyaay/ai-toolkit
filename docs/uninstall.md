@@ -116,9 +116,13 @@ A teardown uses the exit codes `--scan` uses, judged by the closing re-scan rath
 
 Without a receipt the run is in **heuristic mode**, which is permanent rather than transitional: every install made before the receipt existed has none, and only a version of `install.sh` that writes one produces one. Heuristic mode removes less. In a config the installer writes, it deletes a registration only where the value is exactly the single command the installer writes, reports everything else for you to judge, and never treats uv as this toolkit's.
 
-## The stored session lives in one of two places
+## Where the stored session lives
 
-`PIPEFY_KEYCHAIN_BACKEND=file` puts the session in `~/.config/pipefy/keyring.cfg`; without it, the session is in the OS keychain. Removing that line from a shell rc **moves the store** rather than clearing it: the next login writes to the keychain while anything already in `keyring.cfg` stays there, still signed in and invisible to a keychain-only sweep. The scan resolves and reports the effective backend and checks both stores regardless of which one is active.
+`PIPEFY_KEYCHAIN_BACKEND=file` puts the session in `~/.config/pipefy/keyring.cfg`; without it, the session is in the OS keychain. Removing that line from a shell rc **moves the store** rather than clearing it: the next login writes to the keychain while anything already in `keyring.cfg` stays there, still signed in and invisible to a keychain-only sweep.
+
+On a machine with no OS keychain backend (a headless Linux host without Secret Service, for example), Python `keyring` falls back to its own plaintext file, `python_keyring/keyring_pass.cfg` under `$XDG_DATA_HOME` (default `~/.local/share`). Other programs that use `keyring` share that file, so teardown removes only the `[pipefy]` section and keeps no backup copy of the file.
+
+The scan resolves and reports the effective backend and checks all three stores regardless of which one is active.
 
 ## Never removed, by design
 
