@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **README and install guide**: the README is a short front door with a quick-start table (the first command for each install path) and a section listing the hosts the toolkit contacts, the headers it sends, and what the installers and `pipefy auth login` write on your machine. The full install guide, tool-surface selection, and testing the Claude Code plugin from a checkout live in `docs/install.md`; links across docs, skills, and the MCP setup error point there.
+
+- **Claude Code plugin manifest**: `.claude-plugin/plugin.json` carries the fields Anthropic's plugin directory reads for a listing (`icon`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl`, `termsOfServiceUrl`) and a contact email on `author`. `TERMS.md` links the terms page itself instead of the legal index the old link redirected to, and the README embeds its banner with Markdown image syntax.
+
+- **Skill `pipefy-api-fallback`, credentials**: before it reads a `PIPEFY_*` variable, the skill names the variable and the host its value goes to, and waits for the user's yes. It finds which variables are set by listing names only, so no value is printed before that. The README now names this direct `curl` path, `api.pipefy.com` as an alias of the API host, and the scan command, which downloads `uninstall.sh` from GitHub and reads the sources `docs/uninstall.md` lists under Scope, the OS keychain included, without changing them.
+
+### Fixed
+
+- **`uninstall.sh --scan` and teardown, keyring fallback file**: on a machine with no OS keychain backend, Python `keyring` stores the `pipefy auth login` session in its own plaintext file, `python_keyring/keyring_pass.cfg` under `$XDG_DATA_HOME` (default `~/.local/share`), which the scan did not inspect, so it reported such a machine as clean. The scan now reports a Pipefy session there (or reports the file as not inspected when it is unreadable), and teardown removes only the `[pipefy]` section of that shared file, without keeping a backup copy of it.
+
+- **`uninstall.sh` teardown, symlinked files**: when a shell rc, an MCP client config (`~/.claude.json`, `~/.cursor/mcp.json`, and the other JSON configs), the Codex config, or the keyring fallback file is a symlink (a dotfiles repository, for example), teardown edits the file the link points at and keeps the link. It used to replace the link with a regular file and leave the original content, including any credential, untouched. A symlinked file-backend `keyring.cfg` is deleted together with the file it points at. When that file cannot be deleted, teardown keeps the link, reports the failure, and exits 2, so the re-scan still finds the store.
+
+- **Skills `pipefy-introspection` and `pipefy-api-fallback`, endpoints and auth errors**: both skills said introspection and real operations need different hosts. One endpoint, `https://app.pipefy.com/graphql` (the toolkit's default), serves queries, mutations, and introspection, and `api.pipefy.com` answers the same way. The fallback skill also said GraphQL always returns HTTP 200 and that a syntax error returns 400. Syntax errors return 200 with `GRAPHQL_PARSE_FAILED`, authentication failures return HTTP 401 with one of two bodies depending on the cause, and a malformed JSON body returns 500. The error table covers both 401 bodies, `undefinedField`, and the `PERMISSION_DENIED` Pipefy returns for a pipe or card ID that does not exist.
+
 ## [0.5.3-beta.1] - 2026-10-06
 
 ### Added
