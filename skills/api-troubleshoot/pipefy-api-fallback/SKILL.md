@@ -34,6 +34,8 @@ If a write reports failure, re-read the target before changing tiers or retrying
 
 Two options (use whichever is available in the environment). Prefer the Service Account when both exist.
 
+Before reading any `PIPEFY_*` variable, tell the user which variable you will read and that its value goes to `app.pipefy.com` in the `Authorization` header or the token request, and wait for a yes. Do not read it from a file the user did not name.
+
 **Option A — OAuth2 Client Credentials (preferred):**
 
 ```bash
