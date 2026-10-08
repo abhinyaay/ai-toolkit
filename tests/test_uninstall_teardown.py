@@ -1210,6 +1210,56 @@ def test_a_symlinked_shell_rc_is_edited_through_the_link(tmp_path):
     assert real.read_text(encoding="utf-8") == 'alias ll="ls -l"\n'
 
 
+def test_a_symlinked_mcp_client_config_is_edited_through_the_link(tmp_path):
+    home = _home(tmp_path)
+    real = tmp_path / "dotfiles" / "cursor-mcp.json"
+    _write_json(
+        real,
+        {
+            "mcpServers": {
+                "pipefy": {
+                    "command": "pipefy-mcp-server",
+                    "env": {"PIPEFY_TOKEN": "sentinel-token"},
+                },
+                "other": {"command": "other-server"},
+            }
+        },
+    )
+    link = home / ".cursor" / "mcp.json"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(real)
+
+    _run(home, _no_uv_tools(_stub_path(tmp_path)))
+
+    assert link.is_symlink()
+    assert "sentinel-token" not in real.read_text(encoding="utf-8")
+    servers = json.loads(real.read_text(encoding="utf-8"))["mcpServers"]
+    assert servers["other"] == {"command": "other-server"}
+
+
+def test_a_symlinked_claude_json_gets_disabled_servers_through_the_link(tmp_path):
+    home = _home(tmp_path)
+    real = tmp_path / "dotfiles" / "claude.json"
+    _write_json(real, {"projects": {}})
+    (home / ".claude.json").symlink_to(real)
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_json(
+        repo / ".mcp.json",
+        {"mcpServers": {"pipefy": {"command": "uvx", "args": ["pipefy-mcp-server"]}}},
+    )
+    stub = _stub_path(tmp_path, git=True)
+    git = str(stub / "git")
+    subprocess.run([git, "init", "-q", str(repo)], check=True)
+    subprocess.run([git, "-C", str(repo), "add", ".mcp.json"], check=True)
+
+    _run(home, stub, cwd=repo)
+
+    assert (home / ".claude.json").is_symlink()
+    payload = json.loads(real.read_text(encoding="utf-8"))
+    assert payload["projects"][str(repo)]["disabledMcpjsonServers"] == ["pipefy"]
+
+
 @pytest.mark.skipif(os.geteuid() == 0, reason="root reads a mode-000 file")
 def test_an_unreadable_keyring_fallback_file_does_not_stop_the_teardown(tmp_path):
     home = _home(tmp_path)

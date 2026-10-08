@@ -2966,6 +2966,11 @@ import tempfile
 
 path = sys.argv[1]
 keys = sys.argv[2:]
+# A config kept as a symlink (a dotfiles repository) is written at its target:
+# replacing the link would leave the original, and any token in it, untouched.
+real = os.path.realpath(path)
+if os.path.exists(real):
+    path = real
 try:
     with open(path, encoding="utf-8") as fh:
         data = json.load(fh)
@@ -3015,6 +3020,11 @@ import sys
 import tempfile
 
 path, projdir, name = sys.argv[1], sys.argv[2], sys.argv[3]
+# A config kept as a symlink (a dotfiles repository) is written at its target:
+# replacing the link would leave the original, and any token in it, untouched.
+real = os.path.realpath(path)
+if os.path.exists(real):
+    path = real
 data = {}
 if os.path.exists(path):
     try:
