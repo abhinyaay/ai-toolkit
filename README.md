@@ -1,10 +1,4 @@
-<div align="center">
-  <img
-    src="docs/images/pipefy-developers-banner.png"
-    alt="Pipefy Developers: AI Toolkit (MCP Server, Pipefy CLI, GraphQL SDK, Agent Skills)"
-    width="100%"
-  />
-</div>
+![Pipefy Developers: AI Toolkit (MCP Server, Pipefy CLI, GraphQL SDK, Agent Skills)](docs/images/pipefy-developers-banner.png)
 
 <p align="center">
   <a href="https://github.com/pipefy/ai-toolkit/actions/workflows/ci.yml"><img src="https://github.com/pipefy/ai-toolkit/actions/workflows/ci.yml/badge.svg" alt="CI Status" /></a>
