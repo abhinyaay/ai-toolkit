@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Claude Code plugin manifest**: `.claude-plugin/plugin.json` carries the fields Anthropic's plugin directory reads for a listing (`icon`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl`, `termsOfServiceUrl`) and a contact email on `author`. `TERMS.md` links the terms page itself instead of the legal index the old link redirected to, and the README embeds its banner with Markdown image syntax.
 
-- **Skill `pipefy-api-fallback`, credentials**: before it reads a `PIPEFY_*` variable, the skill names the variable and the host its value goes to, and waits for the user's yes. The README now names this direct `curl` path, `api.pipefy.com` as an alias of the API host, and the scan command, which downloads `uninstall.sh` from GitHub and reads the sources `docs/uninstall.md` lists under Scope, the OS keychain included, without changing them.
+- **Skill `pipefy-api-fallback`, credentials**: before it reads a `PIPEFY_*` variable, the skill names the variable and the host its value goes to, and waits for the user's yes. It finds which variables are set by listing names only, so no value is printed before that. The README now names this direct `curl` path, `api.pipefy.com` as an alias of the API host, and the scan command, which downloads `uninstall.sh` from GitHub and reads the sources `docs/uninstall.md` lists under Scope, the OS keychain included, without changing them.
 
 ### Fixed
 
