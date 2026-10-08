@@ -115,7 +115,7 @@ curl -fsSL https://raw.githubusercontent.com/pipefy/ai-toolkit/main/install.sh \
   | sh -s -- --client cursor
 ```
 
-Replace `--client cursor` with one of `claude-code`, `claude-desktop`, `codex`, or `none` (prints the snippet to paste). Useful flags: `--yes` (skip prompts), `--no-skills` (skip `npx skills add`), `--version vX.Y.Z` (pin a [Release](https://github.com/pipefy/ai-toolkit/releases)), `--dry-run` (print commands without executing), `--allow-root` (opt-in; refused by default). After install, run `pipefy auth login` (`--device` on headless systems). The installer puts `pipefy-mcp-server` on PATH, so each client's config collapses to `{"command": "pipefy-mcp-server"}`.
+Replace `--client cursor` with one of `claude-code`, `claude-desktop`, `codex`, or `none` (prints the snippet to paste). Useful flags: `--yes` (skip prompts), `--no-skills` (skip `npx skills add`), `--version vX.Y.Z` (pin a [Release](https://github.com/pipefy/ai-toolkit/releases)), `--dry-run` (print commands without executing), `--allow-root` (opt-in; refused by default). After install, run `pipefy auth login`; on a headless host, use a service account instead (see [`docs/cli/auth.md`](docs/cli/auth.md#headless--ssh)). The installer puts `pipefy-mcp-server` on PATH, so each client's config collapses to `{"command": "pipefy-mcp-server"}`.
 
 > **Production / shared environments:** pin an explicit release with `--version vX.Y.Z` (and prefer fetching `install.sh` from that same [Release](https://github.com/pipefy/ai-toolkit/releases) tag, not the floating `main` branch). Untagged/`@latest`-style installs are fine for local experiments; they are not the default practice for reproducible or corporate rollouts.
 
