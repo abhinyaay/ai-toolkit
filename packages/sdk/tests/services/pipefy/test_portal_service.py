@@ -1296,11 +1296,12 @@ def _forms_element(element_id: str, data_sources: list[dict], editable: bool) ->
     }
 
 
-def _portal_with_forms_element() -> dict:
+def _portal_with_forms_element(target_editable: bool = True) -> dict:
     """``portalInterface`` payload: a sibling forms element, then the target.
 
-    The sibling comes first and is bound to another pipe, so a lookup that does not
-    match on ``element_id`` resends the sibling's bindings.
+    The sibling comes first, is bound to another pipe and stores the opposite
+    ``editable``, so a lookup that does not match on ``element_id`` resends the
+    sibling's bindings and flag.
     """
     return {
         "portalInterface": {
@@ -1311,9 +1312,13 @@ def _portal_with_forms_element() -> dict:
                     "id": _PAGE_ID,
                     "elements": [
                         _forms_element(
-                            _SIBLING_ELEMENT_ID, _SIBLING_DATA_SOURCES, False
+                            _SIBLING_ELEMENT_ID,
+                            _SIBLING_DATA_SOURCES,
+                            not target_editable,
                         ),
-                        _forms_element(_ELEMENT_ID, _STORED_DATA_SOURCES, True),
+                        _forms_element(
+                            _ELEMENT_ID, _STORED_DATA_SOURCES, target_editable
+                        ),
                     ],
                 },
             ],
@@ -1349,15 +1354,44 @@ async def test_update_portal_element_sends_given_data_sources_without_reading() 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_update_portal_element_keeps_current_data_sources_when_omitted() -> None:
+async def test_update_portal_element_empty_data_sources_unlink_with_portal_uuid() -> (
+    None
+):
+    """``data_sources=[]`` unlinks even when portal_uuid is given; nothing is read."""
+    service, _public, interfaces_executor = _make_interfaces_service(
+        {"updateElement": {"success": True}},
+    )
+
+    await service.update_portal_element(
+        _ELEMENT_ID,
+        _PAGE_ID,
+        type="forms",
+        metadata=_FORMS_METADATA,
+        data_sources=[],
+        portal_uuid=_PORTAL_UUID,
+    )
+
+    interfaces_executor.execute_query.assert_called_once()
+    query_used, variables = interfaces_executor.execute_query.call_args[0]
+    _assert_interfaces_mutation_query(query_used, "UPDATE_ELEMENT_MUTATION")
+    assert variables["input"]["data_sources"] == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("stored_editable", [True, False])
+async def test_update_portal_element_keeps_current_data_sources_when_omitted(
+    stored_editable: bool,
+) -> None:
     """Omitted data_sources are read from the portal and sent back, not cleared.
 
-    ``editable`` goes back with them: the API rejects an update whose data source
-    lists fieldKeys when ``editable`` is missing.
+    The element's stored ``editable`` goes back with them, ``False`` included: the
+    API rejects an update whose data source lists fieldKeys when ``editable`` is
+    missing.
     """
     service, _public, interfaces_executor = _make_interfaces_service(None)
     interfaces_executor.execute_query.side_effect = [
-        _portal_with_forms_element(),
+        _portal_with_forms_element(target_editable=stored_editable),
         {"updateElement": {"success": True}},
     ]
 
@@ -1377,7 +1411,7 @@ async def test_update_portal_element_keeps_current_data_sources_when_omitted() -
     assert variables["input"]["data_sources"] == [
         {"repoId": EXAMPLE_PIPE_REPO_ID, "fieldKeys": ["title"]}
     ]
-    assert variables["input"]["editable"] is True
+    assert variables["input"]["editable"] is stored_editable
 
 
 @pytest.mark.unit
