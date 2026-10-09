@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Skill `pipefy-api-fallback`, credentials**: before it reads a `PIPEFY_*` variable, the skill names the variable and the host its value goes to, and waits for the user's yes. It finds which variables are set by listing names only, so no value is printed before that. The README now names this direct `curl` path, `api.pipefy.com` as an alias of the API host, and the scan command, which downloads `uninstall.sh` from GitHub and reads the sources `docs/uninstall.md` lists under Scope, the OS keychain included, without changing them.
 
+- **MCP `update_portal_element` / CLI `pipefy portal element update`**: an update must now pass `data_sources` (`--data-sources`) or `portal_uuid` (`--portal-uuid`). Before, leaving out `data_sources` sent `[]` and unlinked the element from its pipe or table; now `portal_uuid` keeps the current bindings and omitting both is rejected before any call (MCP `INVALID_ARGUMENTS`, CLI exit 2). Updates of elements with no bindings, such as `link`, pass `data_sources: []` / `--data-sources '[]'`. (#711)
+
 ### Fixed
 
 - **`uninstall.sh --scan` and teardown, keyring fallback file**: on a machine with no OS keychain backend, Python `keyring` stores the `pipefy auth login` session in its own plaintext file, `python_keyring/keyring_pass.cfg` under `$XDG_DATA_HOME` (default `~/.local/share`), which the scan did not inspect, so it reported such a machine as clean. The scan now reports a Pipefy session there (or reports the file as not inspected when it is unreadable), and teardown removes only the `[pipefy]` section of that shared file, without keeping a backup copy of it.
@@ -49,8 +51,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **MCP `fill_card_phase_fields`**: no longer writes when the phase has no editable fields, on every path including a shown form; dropped keys return in `skipped_field_ids`. CLI `pipefy card fill --fields {}` on a phase with editable fields now returns the collected-nothing envelope instead of short-circuiting with "No fields to update."
 
 - **CLI `pipefy member remove`**: verifies membership after the mutation. `--json` now prints `{"data": <mutation result>, "warning": ...}` instead of the mutation result at the top level. `warning` is `null` when every member is gone.
-
-- **MCP `update_portal_element` / CLI `pipefy portal element update`**: an update must now pass `data_sources` (`--data-sources`) or `portal_uuid` (`--portal-uuid`). Before, leaving out `data_sources` sent `[]` and unlinked the element from its pipe or table; now `portal_uuid` keeps the current bindings and omitting both is rejected before any call (MCP `INVALID_ARGUMENTS`, CLI exit 2). Updates of elements with no bindings, such as `link`, pass `data_sources: []` / `--data-sources '[]'`. (#711)
 
 ### Fixed
 
