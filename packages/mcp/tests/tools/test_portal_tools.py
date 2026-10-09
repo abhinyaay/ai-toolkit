@@ -1515,7 +1515,7 @@ async def test_update_portal_element_keeps_data_sources_with_portal_uuid(
 async def test_update_portal_element_rejects_missing_data_sources_and_portal_uuid(
     portal_session, mock_portal_client, extract_payload
 ):
-    """The old tool sent [] here and unlinked the element from its pipe or table."""
+    """Without data_sources or portal_uuid, the call is rejected before any request."""
     async with portal_session as session:
         result = await session.call_tool(
             "update_portal_element",
