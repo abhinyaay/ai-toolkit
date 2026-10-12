@@ -124,6 +124,7 @@ class GraphQLEndpoint:
     transport state (avoids ``TransportAlreadyConnected``).
     """
 
+    # Bounds both the httpx transport and gql's per-execute timer (gql defaults to 10 s).
     GRAPHQL_REQUEST_TIMEOUT_SECONDS: ClassVar[int] = 30
 
     def __init__(
@@ -172,6 +173,7 @@ class GraphQLEndpoint:
                         client = Client(
                             transport=transport,
                             fetch_schema_from_transport=True,
+                            execute_timeout=self.GRAPHQL_REQUEST_TIMEOUT_SECONDS,
                         )
                         async with client as session:
                             result = await session.execute(request)
@@ -182,12 +184,15 @@ class GraphQLEndpoint:
                 transport=transport,
                 schema=self._fetched_gql_schema,
                 fetch_schema_from_transport=False,
+                execute_timeout=self.GRAPHQL_REQUEST_TIMEOUT_SECONDS,
             )
             async with reuse_client as session:
                 return await session.execute(request)
 
         async with Client(
-            transport=transport, fetch_schema_from_transport=False
+            transport=transport,
+            fetch_schema_from_transport=False,
+            execute_timeout=self.GRAPHQL_REQUEST_TIMEOUT_SECONDS,
         ) as session:
             return await session.execute(request)
 
