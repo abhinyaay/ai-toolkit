@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **SDK GraphQL timeout**: every GraphQL call from the SDK, the MCP server, and the CLI stopped with a bare `TimeoutError` after 10 s, the `gql` client's default execute timeout, although the SDK sets a 30 s request timeout. A call now waits up to 30 s, so a call that the API answers in 10–30 s returns its result instead of failing. (#778)
+
 ## [0.5.4-beta.1] - 2026-10-09
 
 ### Changed
