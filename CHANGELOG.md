@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- **SDK GraphQL timeout**: a GraphQL call from the SDK, the MCP server, or the CLI that ran longer than 10 s stopped with a bare `TimeoutError`, the `gql` client's default execute timeout, although the SDK sets a 30 s request timeout. A call now waits up to 30 s, so a call that the API answers in 10 to 30 s returns its result instead of failing. A call past 30 s still fails with the same bare `TimeoutError`. (#778)
+- **SDK GraphQL timeout**: a GraphQL call from the SDK, the MCP server, or the CLI that ran longer than 10 s stopped with a bare `TimeoutError`, the `gql` client's default execute timeout, although the SDK sets a 30 s request timeout. A call now waits up to 30 s, so a call that the API answers in 10 to 30 s returns its result instead of failing. A call past 30 s still fails, now with the descriptive error from #781. (#778)
+- **SDK GraphQL timeout message**: a GraphQL call that exceeded the 30 s request timeout raised a bare `TimeoutError` with an empty message, so neither a caller nor the MCP tool reply could tell the call had timed out or after how long — the MCP layer fell back to a generic "request failed" message. The SDK now raises `PipefyRequestTimeoutError`, whose message names the limit and its value; it subclasses both `PipefyError` and `TimeoutError`, so existing `except TimeoutError` handlers keep working. (#781)
 
 ## [0.5.4-beta.1] - 2026-10-09
 
