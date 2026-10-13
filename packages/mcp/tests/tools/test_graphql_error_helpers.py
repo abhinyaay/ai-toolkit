@@ -3,12 +3,15 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from pipefy_sdk import PipefyClient, PipefyGraphQLError
+from pipefy_sdk import PipefyClient, PipefyGraphQLError, PipefyRequestTimeoutError
 
 import pipefy_mcp.settings as settings_mod
+from pipefy_mcp.core.tool_error_envelope import tool_error_message
 from pipefy_mcp.tools.graphql_error_helpers import (
     enrich_permission_denied_error,
     ensure_non_empty_error_message,
+    extract_error_strings,
+    handle_tool_graphql_error,
 )
 
 
@@ -47,6 +50,37 @@ def _mock_settings(monkeypatch):
     mock_settings = MagicMock()
     mock_settings.pipefy.permission_denied_enrichment_timeout_seconds = 5.0
     monkeypatch.setattr(settings_mod, "settings", mock_settings)
+
+
+@pytest.mark.unit
+def test_extract_error_strings_reads_request_timeout_message():
+    """A timed-out request now carries text, so extraction no longer comes back empty.
+
+    gql's bare ``TimeoutError()`` stringified to ``""``; the SDK now raises
+    ``PipefyRequestTimeoutError`` with a message, which ``extract_error_strings``
+    surfaces.
+    """
+    strings = extract_error_strings(PipefyRequestTimeoutError(30))
+    assert strings
+    assert "timed out" in strings[0].lower()
+    assert "30" in strings[0]
+
+
+@pytest.mark.unit
+def test_handle_tool_graphql_error_surfaces_timeout_not_fallback():
+    """The tool reply names the timeout instead of the generic fallback.
+
+    With a bare ``TimeoutError`` the handler fell through to ``fallback_msg``; the
+    descriptive ``PipefyRequestTimeoutError`` reaches the caller verbatim.
+    """
+    fallback = "The request to Pipefy failed."
+    payload = handle_tool_graphql_error(PipefyRequestTimeoutError(30), fallback)
+
+    message = tool_error_message(payload)
+    assert payload["success"] is False
+    assert message != fallback
+    assert "timed out" in message.lower()
+    assert "30" in message
 
 
 @pytest.mark.unit
