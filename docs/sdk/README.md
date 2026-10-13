@@ -58,8 +58,13 @@ Other exported error types sit outside this root. Catch these by name:
 - **`AttachmentUploadError`** and **`KnowledgeBaseDocumentUploadError`**
   subclass `Exception`.
 
-Transport-level failures (connection refused, timeouts) surface as `gql`'s
-`TransportError`, which the SDK does not wrap.
+A request that exceeds the SDK's request timeout
+(`GraphQLEndpoint.GRAPHQL_REQUEST_TIMEOUT_SECONDS`, 30 s) raises
+`PipefyRequestTimeoutError`, whose message names the limit. It subclasses both
+`PipefyError` and `TimeoutError`, so `except PipefyError` and a plain
+`except TimeoutError` both catch it. Other transport-level failures (connection
+refused, for example) surface as `gql`'s `TransportError`, which the SDK does not
+wrap.
 
 ## AI agents
 
