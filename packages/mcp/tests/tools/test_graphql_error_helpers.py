@@ -10,8 +10,8 @@ from pipefy_mcp.core.tool_error_envelope import tool_error_message
 from pipefy_mcp.tools.graphql_error_helpers import (
     enrich_permission_denied_error,
     ensure_non_empty_error_message,
-    extract_error_strings,
     handle_tool_graphql_error,
+    timeout_message_or,
 )
 
 
@@ -53,24 +53,36 @@ def _mock_settings(monkeypatch):
 
 
 @pytest.mark.unit
-def test_extract_error_strings_reads_request_timeout_message():
-    """A timed-out request now carries text, so extraction no longer comes back empty.
+def test_timeout_message_or_returns_timeout_text():
+    """A ``PipefyRequestTimeoutError`` surfaces its own descriptive message.
 
-    gql's bare ``TimeoutError()`` stringified to ``""``; the SDK now raises
-    ``PipefyRequestTimeoutError`` with a message, which ``extract_error_strings``
-    surfaces.
+    A timeout carries no GraphQL error code, so the code-based delete mappers would
+    fold it into a generic "try again" reply. ``timeout_message_or`` returns the
+    timeout's message ahead of that text, naming the limit and the mutation warning.
     """
-    strings = extract_error_strings(PipefyRequestTimeoutError(30))
-    assert strings
-    assert "timed out" in strings[0].lower()
-    assert "30" in strings[0]
+    message = timeout_message_or(
+        PipefyRequestTimeoutError(30), "Please try again or contact support."
+    )
+    assert "timed out" in message.lower()
+    assert "30" in message
+    assert message != "Please try again or contact support."
+
+
+@pytest.mark.unit
+def test_timeout_message_or_passes_non_timeout_through():
+    """A non-timeout exception yields the code-based fallback unchanged."""
+    fallback = "Please try again or contact support."
+    assert timeout_message_or(PipefyGraphQLError([{"message": "boom"}]), fallback) == (
+        fallback
+    )
+    assert timeout_message_or(RuntimeError("x"), fallback) == fallback
 
 
 @pytest.mark.unit
 def test_handle_tool_graphql_error_surfaces_timeout_not_fallback():
     """The tool reply names the timeout instead of the generic fallback.
 
-    With a bare ``TimeoutError`` the handler fell through to ``fallback_msg``; the
+    A bare ``TimeoutError`` would leave the handler on ``fallback_msg``; the
     descriptive ``PipefyRequestTimeoutError`` reaches the caller verbatim.
     """
     fallback = "The request to Pipefy failed."
