@@ -57,6 +57,18 @@ def test_request_timeout_is_still_a_timeout_error() -> None:
     assert issubclass(PipefyRequestTimeoutError, TimeoutError)
 
 
+def test_request_timeout_message_warns_the_write_may_have_applied() -> None:
+    """The message tells the caller a timed-out write can still have committed.
+
+    The server does not abort a mutation when the client stops waiting, so the
+    message must steer the caller to read state back rather than blindly retry.
+    """
+    message = str(PipefyRequestTimeoutError(30))
+    lowered = message.lower()
+    assert "mutation" in lowered
+    assert "read the state back" in lowered
+
+
 def test_raised_request_timeout_is_caught_by_both_contracts() -> None:
     """One instance satisfies both ``except PipefyError`` and ``except TimeoutError``."""
     caught_as_root = False
