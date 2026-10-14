@@ -31,7 +31,8 @@ class PipefyRequestTimeoutError(PipefyError, TimeoutError):
         self.timeout_seconds = timeout_seconds
         super().__init__(
             f"Pipefy GraphQL request timed out after {timeout_seconds} s "
-            f"(GraphQLEndpoint.GRAPHQL_REQUEST_TIMEOUT_SECONDS)."
+            f"(GraphQLEndpoint.GRAPHQL_REQUEST_TIMEOUT_SECONDS). "
+            "A mutation can still have been applied. Read the state back before you retry."
         )
 
 
